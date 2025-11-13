@@ -3,9 +3,7 @@ import axios from 'axios';
 // Create axios instance
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // Don't set Content-Type here - let axios and FormData handle it automatically
 });
 
 // Request interceptor - Add token to requests
@@ -21,6 +19,12 @@ api.interceptors.request.use(
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Only set Content-Type for non-FormData requests
+    // FormData should set its own multipart/form-data header with boundary
+    if (!(config.data instanceof FormData) && !config.headers['Content-Type']) {
+      config.headers['Content-Type'] = 'application/json';
     }
     
     return config;

@@ -68,7 +68,8 @@ const Reviews = () => {
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/admin/reviews/${selectedReview._id}`);
+      // FIX APPLIED: Changed endpoint from /admin/reviews/:id to the correct /reviews/:id
+      await api.delete(`/reviews/${selectedReview._id}`);
       toast.success('Review deleted successfully');
       setDeleteDialogOpen(false);
       fetchReviews();

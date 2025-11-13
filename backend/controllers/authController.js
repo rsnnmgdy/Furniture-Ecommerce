@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const admin = require('firebase-admin'); // Import the initialized admin instance
 const asyncHandler = require('express-async-handler'); // Use asyncHandler for cleaner code
+const { processUploadedFiles, deleteImage } = require('../config/cloudinary'); // ADDED
 
 // @desc    Register user (Your original JWT system)
 // @route   POST /api/auth/register
@@ -205,14 +206,26 @@ exports.updateProfile = asyncHandler(async (req, res) => {
       : req.body.address;
   }
 
-  // Update photo if uploaded
+  // --- START FIX FOR PHOTO UPLOAD ---
   if (req.file) {
-    // You should add logic here to delete the old photo from Cloudinary
-    user.photo = {
-      url: req.file.path,
-      publicId: req.file.filename,
-    };
+    // 1. Delete old photo from Cloudinary if it exists
+    if (user.photo && user.photo.publicId) {
+      await deleteImage(user.photo.publicId); 
+    }
+
+    // 2. Process the new file buffer (Multer saves to req.file.buffer)
+    // We target the 'furniture/users' folder for avatars
+    const uploaded = await processUploadedFiles([req.file], 'furniture/users');
+    
+    // 3. Save the new Cloudinary URL/ID to the user model
+    if (uploaded.length > 0) {
+        user.photo = {
+            url: uploaded[0].url,
+            publicId: uploaded[0].publicId,
+        };
+    }
   }
+  // --- END FIX ---
 
   const updatedUser = await user.save();
 

@@ -128,16 +128,30 @@ const Products = () => {
 
         console.log('📤 FormData entries:', Array.from(formData.entries()).map(([k, v]) => `${k}: ${v instanceof File ? v.name : typeof v}`));
 
+        let response;
         if (editingProduct) {
-          await productService.updateProduct(editingProduct._id, formData);
+          response = await productService.updateProduct(editingProduct._id, formData);
           toast.success('Product updated!');
         } else {
-          await productService.createProduct(formData);
+          response = await productService.createProduct(formData);
           toast.success('Product created!');
         }
 
+        // --- FIX: Directly update the product list with the API response to ensure new images display ---
+        const newProduct = response.product;
+        setProducts(prevProducts => {
+            const index = prevProducts.findIndex(p => p._id === newProduct._id);
+            if (index !== -1) {
+                // If existing, replace it in the list
+                return prevProducts.map(p => p._id === newProduct._id ? newProduct : p);
+            } else {
+                // If new, prepend it to the list
+                return [newProduct, ...prevProducts];
+            }
+        });
+        // --- END FIX ---
+
         setDialogOpen(false);
-        fetchProducts();
       } catch (error) {
         toast.error(error.message || 'Failed to save product');
       }
@@ -154,23 +168,37 @@ const Products = () => {
     setDialogOpen(true);
   };
   
-  const openEditDialog = (product) => {
-    setEditingProduct(product);
-    formik.setValues({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      salePrice: product.salePrice || '',
-      category: product.category,
-      material: product.material,
-      stock: product.stock,
-      color: product.color?.join(', ') || '',
-    });
-    setImageFiles([]);
-    setExistingImages(product.images || []); // Set existing images for preview
-    setImagesToDelete([]);
-    setDialogOpen(true);
+  // FIX APPLIED: Fetch product details again before opening dialog to ensure fresh image data
+  const openEditDialog = async (product) => {
+    try {
+      setLoading(true);
+      // Fetch the most up-to-date product data from the server
+      const freshData = await productService.getProduct(product._id);
+      const freshProduct = freshData.product;
+
+      setEditingProduct(freshProduct);
+      formik.setValues({
+        name: freshProduct.name,
+        description: freshProduct.description,
+        price: freshProduct.price,
+        salePrice: freshProduct.salePrice || '',
+        category: freshProduct.category,
+        material: freshProduct.material,
+        stock: freshProduct.stock,
+        color: freshProduct.color?.join(', ') || '',
+      });
+      setImageFiles([]);
+      // Use fresh data to populate existing images
+      setExistingImages(freshProduct.images || []); 
+      setImagesToDelete([]);
+      setDialogOpen(true);
+    } catch (error) {
+        toast.error('Failed to load product details for editing.');
+    } finally {
+        setLoading(false);
+    }
   };
+
 
   // --- Handlers for image add/remove ---
   const handleNewImageUpload = (e) => {
@@ -335,9 +363,11 @@ const Products = () => {
                       />
                     </TableCell>
                     <TableCell>
+                      {/* DIAGNOSTIC LOG AND ROBUST IMAGE CHECK */}
+                      {console.log(`[Admin] Product "${product.name}" images:`, product.images)}
                       <Box
                         component="img"
-                        src={product.images[0]?.url || '/placeholder.jpg'}
+                        src={product.images && product.images.length > 0 ? product.images[0].url : '/placeholder.jpg'}
                         alt={product.name}
                         sx={{ width: 50, height: 50, objectFit: 'cover', borderRadius: '8px', border: '1px solid #E8E8E8' }}
                       />

@@ -55,7 +55,7 @@ const userPhotoFileFilter = (req, file, cb) => {
 // Use memory storage instead of Cloudinary storage adapter for better control
 const memoryStorage = multer.memoryStorage();
 
-// Create multer instances with file filters
+// Create multer instances
 const uploadProductImages = multer({ 
   storage: memoryStorage,
   limits: { 
@@ -63,7 +63,7 @@ const uploadProductImages = multer({
     files: 10 // Max 10 images
   },
   fileFilter: (req, file, cb) => {
-    console.log(`📁 File received: ${file.originalname} (${file.size} bytes, ${file.mimetype})`);
+    console.log(`📁 Product file received: ${file.originalname} (${file.size} bytes, ${file.mimetype})`);
     imageFileFilter(req, file, cb);
   }
 });
@@ -102,6 +102,15 @@ const processUploadedFiles = async (files = [], folder = 'furniture/products') =
       }
       if (file.buffer) {
         const file64 = parser.format(path.extname(file.originalname).toString(), file.buffer).content;
+        
+        // Diagnostic Log for Base64 confirmation
+        if (file64) {
+          console.log(`📝 Prepared Base64 for ${file.originalname}. Size: ${file64.length} chars.`);
+        } else {
+          console.warn(`⚠️ Failed to generate Base64 for ${file.originalname}`);
+        }
+        
+        // This is where the upload happens
         const res = await cloudinaryLib.v2.uploader.upload(file64, { folder, resource_type: 'auto' });
         results.push({ url: res.secure_url, publicId: res.public_id });
         continue;
@@ -109,7 +118,8 @@ const processUploadedFiles = async (files = [], folder = 'furniture/products') =
       console.warn('⚠️ processUploadedFiles: unknown file shape', Object.keys(file));
     } catch (err) {
       console.error('❌ processUploadedFiles error for file', file.originalname || '<unknown>', err.message);
-      throw err;
+      // Ensure error is thrown back to the controller
+      throw err; 
     }
   }
   return results;

@@ -11,7 +11,7 @@ import {
   Divider,
   InputAdornment,
   IconButton,
-  Stack, // <-- IMPORTED
+  Stack,
   CircularProgress,
 } from '@mui/material';
 import { Google, Facebook, Visibility, VisibilityOff } from '@mui/icons-material';
@@ -19,6 +19,9 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
+// FIX: Import the necessary Firebase functions for social login
+import { signInWithGoogle, signInWithFacebook } from '../../config/firebase'; 
+
 
 const validationSchema = Yup.object({
   name: Yup.string().min(2, 'Min 2 characters').max(50, 'Max 50 characters').required('Name is required'),
@@ -30,8 +33,8 @@ const validationSchema = Yup.object({
 
 const Register = () => {
   const navigate = useNavigate();
-  // --- 1. Get ALL auth functions from context ---
-  const { register, signInWithGoogle, signInWithFacebook, user } = useAuth();
+  // We need firebaseLogin from context to handle social login tokens
+  const { register, firebaseLogin, user } = useAuth(); 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -58,25 +61,34 @@ const Register = () => {
       try {
         setLoading(true);
         setError('');
-        // --- 2. Call the JWT register function ---
-        await register(values.name, values.email, values.password, values.username);
+        
+        // FIX APPLIED: Pass a single userData object containing the necessary fields
+        const userData = {
+            name: values.name,
+            email: values.email,
+            username: values.username,
+            password: values.password,
+        };
+        
+        await register(userData);
+        
         toast.success('Registration successful! Please login.');
         navigate('/login');
       } catch (err) {
-        setError(err.response?.data?.message || 'Registration failed');
+        setError(err.message || err.response?.data?.message || 'Registration failed');
       } finally {
         setLoading(false);
       }
     },
   });
 
-  // --- 3. Google Login Handler ---
+  // --- Google Login Handler ---
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       setError('');
-      await signInWithGoogle();
-      // The useEffect will handle success
+      const { token } = await signInWithGoogle();
+      await firebaseLogin(token); 
     } catch (err) {
       setError(err.message || 'Google signup failed');
       toast.error('Google signup failed. Please try again.');
@@ -84,13 +96,13 @@ const Register = () => {
     }
   };
 
-  // --- 4. Facebook Login Handler ---
+  // --- Facebook Login Handler ---
   const handleFacebookLogin = async () => {
     try {
       setLoading(true);
       setError('');
-      await signInWithFacebook();
-      // The useEffect will handle success
+      const { token } = await signInWithFacebook();
+      await firebaseLogin(token);
     } catch (err) {
       setError(err.message || 'Facebook signup failed');
       toast.error('Facebook signup failed. Please try again.');
@@ -127,7 +139,7 @@ const Register = () => {
             </Alert>
           )}
 
-          {/* === 5. THIS IS THE JSX FIX === */}
+          {/* === Social Login Buttons === */}
           <Stack spacing={1.5} sx={{ mb: 3 }}>
             <Button
               fullWidth
@@ -155,7 +167,7 @@ const Register = () => {
               Sign up with Facebook
             </Button>
           </Stack>
-          {/* === END OF FIX === */}
+          {/* === END Social Login Buttons === */}
 
           <Divider sx={{ my: 3 }}>
             <Typography variant="body2" color="text.secondary">

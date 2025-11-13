@@ -24,6 +24,8 @@ import Login from './pages/user/Login';
 import Register from './pages/user/Register';
 import ForgotPassword from './pages/user/ForgotPassword';
 import ResetPassword from './pages/user/ResetPassword';
+// --- NEW --- Import the new product list page
+import ProductListPage from './pages/user/ProductListPage'; 
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -52,6 +54,14 @@ function App() {
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password/:token" element={<ResetPassword />} />
 
+                  {/* --- NEW --- Product & Category Routes */}
+                  {/* This route shows ALL products */}
+                  <Route path="/products" element={<ProductListPage />} />
+                  
+                  {/* This route shows filtered products and re-uses the same page */}
+                  <Route path="/categories/:categoryName" element={<ProductListPage />} />
+
+
                   {/* Protected User Routes */}
                   <Route
                     path="/cart"
@@ -61,6 +71,7 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  {/* ... (rest of your routes are perfect) ... */}
                   <Route
                     path="/checkout"
                     element={

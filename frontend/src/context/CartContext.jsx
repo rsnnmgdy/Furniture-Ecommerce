@@ -3,6 +3,7 @@ import cartService from '../services/cartService';
 import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
+CartContext.displayName = 'CartContext';
 
 export const useCart = () => {
   const context = useContext(CartContext);
@@ -12,7 +13,7 @@ export const useCart = () => {
   return context;
 };
 
-export const CartProvider = ({ children }) => {
+function CartProviderComponent({ children }) {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
   const { isAuthenticated } = useAuth();
@@ -101,4 +102,7 @@ export const CartProvider = ({ children }) => {
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-};
+}
+
+CartProviderComponent.displayName = 'CartProvider';
+export const CartProvider = CartProviderComponent;

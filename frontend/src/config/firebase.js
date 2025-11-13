@@ -7,15 +7,15 @@ import {
   signOut 
 } from 'firebase/auth';
 
-// Your Firebase configuration
+// Your Firebase configuration - MATCHES BACKEND SERVICE ACCOUNT
 const firebaseConfig = {
-  apiKey: "AIzaSyDsrUFRSZueFEF-pMLj1fLqovrXFC4SJxo",
-  authDomain: "ecommerce-1b241.firebaseapp.com",
-  projectId: "ecommerce-1b241",
-  storageBucket: "ecommerce-1b241.firebasestorage.app",
-  messagingSenderId: "787626583007",
-  appId: "1:787626583007:web:b5c681993974cb29e6da6a",
-  measurementId: "G-2NVBMDV7YV"
+  apiKey: "AIzaSyDHKaLL4jsJOXW-IRRruCBKXjyLZftwci0",
+  authDomain: "furniture-ecommerce-58c19.firebaseapp.com",
+  projectId: "furniture-ecommerce-58c19",
+  storageBucket: "furniture-ecommerce-58c19.firebasestorage.app",
+  messagingSenderId: "704464963020",
+  appId: "1:704464963020:web:3cc5d7d4b53a447ed8c969",
+  measurementId: "G-KFR1SQ67ZV"
 };
 
 // Initialize Firebase

@@ -1,18 +1,32 @@
-require('dotenv').config();
+const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
+const admin = require('firebase-admin');
 const connectDB = require('./config/db');
-const { initializeFirebase } = require('./config/firebase');
+// const { initializeFirebase } = require('./config/firebase'); // <-- 1. DELETE THIS LINE
 const errorHandler = require('./middleware/errorHandler');
 
+dotenv.config();
+try {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      // This line replaces the "\n" string with actual newlines
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    })
+  });
+  console.log('Firebase Admin SDK initialized successfully.');
+} catch (error) {
+  console.error('CRITICAL: Error initializing Firebase Admin SDK:', error);
+}
 // Initialize Express app
 const app = express();
 
 // Connect to MongoDB
 connectDB();
 
-// Initialize Firebase
-initializeFirebase();
+// initializeFirebase(); // <-- 2. DELETE THIS LINE
 
 // Middleware
 app.use(cors({
@@ -22,13 +36,12 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-// Routes (UPDATE THIS SECTION)
+// Routes (Your routes are correct)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/reviews', require('./routes/reviews'));
-app.use('/api/cart', require('./routes/cart'));  // ADD THIS
+app.use('/api/cart', require('./routes/cart'));
 app.use('/api/admin', require('./routes/admin'));
 
 

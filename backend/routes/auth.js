@@ -1,32 +1,54 @@
-const authController = require('../controllers/authController');
-
 const express = require('express');
 const router = express.Router();
+
+// --- 1. Import your controllers ---
+// We remove 'register', 'login', and 'firebaseLogin' as they are no longer used.
 const {
-  register,
-  login,
-  firebaseLogin,
   getProfile,
   updateProfile,
+  forgotPassword,
+  resetPassword,
 } = require('../controllers/authController');
+
+// --- 2. Import your middleware ---
 const { protect } = require('../middleware/auth');
 const { uploadUserPhoto } = require('../middleware/upload');
 const {
-  registerValidation,
-  loginValidation,
+  // We remove 'registerValidation' and 'loginValidation'
   profileUpdateValidation,
   validate,
 } = require('../middleware/validation');
 
-// Public routes
-router.post('/register', registerValidation, validate, register);
-router.post('/login', loginValidation, validate, login);
-router.post('/firebase-login', firebaseLogin);
+// --- 3. Import the NEW Firebase middleware ---
+const { firebaseAuthCheck } = require('../middleware/firebaseAuthMiddleware');
 
-router.post('/forgot-password', authController.forgotPassword);
-router.post('/reset-password/:token', authController.resetPassword);
 
-// Protected routes
+// === 4. NEW FIREBASE-ENABLED ROUTES ===
+// These match what your AuthContext is calling
+
+// @route   POST /api/auth/verify-token
+// @desc    Verify Firebase token (from any login) and get MongoDB user
+// @access  Private (requires Firebase token)
+router.post('/verify-token', firebaseAuthCheck, (req, res) => {
+  // The middleware did all the work and attached `req.user`
+  res.status(200).json({ user: req.user });
+});
+
+// @route   POST /api/auth/register
+// @desc    Register new email/pass user in MongoDB *after* Firebase creation
+// @access  Private (requires Firebase token)
+router.post('/register', firebaseAuthCheck, (req, res) => {
+  // The middleware found/created the user
+  res.status(201).json({ user: req.user });
+});
+
+
+// === 5. YOUR EXISTING ROUTES (Unchanged) ===
+
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
+
+// Protected routes (these use your *original* 'protect' middleware)
 router.get('/profile', protect, getProfile);
 router.put(
   '/profile',
@@ -37,8 +59,7 @@ router.put(
   updateProfile
 );
 
-// ADD THIS TEMPORARY ROUTE AT THE BOTTOM (before module.exports)
-// ⚠️ REMOVE THIS IN PRODUCTION!
+// Your temporary admin route
 router.post('/create-admin', async (req, res) => {
   try {
     const { username } = req.body;

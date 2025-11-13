@@ -9,40 +9,47 @@ import {
   useTheme,
   Paper,
   Stack,
-  // TextField, InputAdornment, // <-- Removed
+  TextField,
+  InputAdornment,
   Button,
-  ToggleButtonGroup,
-  ToggleButton,
-  Fab,
-  Badge,
+  // ToggleButtonGroup, ToggleButton, // <-- Removed
 } from '@mui/material';
 import {
   FilterList,
   ChevronLeft,
   ChevronRight,
-  // Search, // <-- Removed
-  ShoppingCart,
-  GridView as GridViewIcon, // <-- NEW ICON
-  DensityMedium as DensityMediumIcon, // <-- NEW ICON
+  Search,
 } from '@mui/icons-material';
-// 1. useSearchParams is now needed to read the search query
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import productService from '../../services/productService';
+
+// Import services and context
+import productService from '../../services/productService'; // Make sure this path is correct
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+
+// Import components from Home.jsx
 import Loading from '../../components/common/Loading';
-import Hero from '../../components/user/Hero';
 import useDebounce from '../../utils/useDebounce';
 import FilterSidebar from '../../components/user/FilterSidebar';
-import ProductGrid from '../../components/user/ProductGrid';
+import ProductGrid from '../../components/user/ProductGrid'; // The component you wanted
 
-const Home = () => {
+// Helper function to make the category title look nice
+const formatTitle = (title) => {
+  if (!title || title === 'All') return 'All Products';
+  return title
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const ProductListPage = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams(); // 2. Get searchParams
+  const { categoryName } = useParams(); // Get category from URL
+  const [searchParams] = useSearchParams();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { addToCart, getCartCount } = useCart();
+  const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
 
   const [products, setProducts] = useState([]);
@@ -50,18 +57,13 @@ const Home = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  
-  // 3. --- DEFAULT TO GRID ---
-  const [scrollMode, setScrollMode] = useState('grid'); // Was 'infinite'
-  
-  const [hasMore, setHasMore] = useState(true);
-  const [wishlist, setWishlist] = useState([]);
-  
-  // 4. --- REMOVED LOCAL SEARCH STATE ---
-  // const [searchQuery, setSearchQuery] = useState(''); 
+  // const [scrollMode, setScrollMode] = useState('infinite'); // <-- Removed
+  // const [hasMore, setHasMore] = useState(true); // <-- Removed
+  const [wishlist, setWishlist] = useState([]); // You'll need to fetch real wishlist data
+  const [searchQuery, setSearchQuery] = useState('');
   
   const [filters, setFilters] = useState({
-    category: searchParams.get('category') || 'All',
+    category: categoryName || searchParams.get('category') || 'All',
     minPrice: '',
     maxPrice: '',
     minRating: '',
@@ -73,32 +75,37 @@ const Home = () => {
     setFiltersOpen(!isMobile);
   }, [isMobile]);
 
-  // 5. Get search query from URL and debounce it
-  const searchQuery = searchParams.get('search') || '';
+  useEffect(() => {
+    const categoryFromURL = categoryName || searchParams.get('category') || 'All';
+    if (categoryFromURL !== filters.category) {
+       setFilters((prev) => ({ ...prev, category: categoryFromURL }));
+    }
+  }, [categoryName, searchParams, filters.category]);
+
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  // Sync category from URL (for browser back/forward)
+  // This hook fetches products whenever filters, search, or page changes
   useEffect(() => {
-    const categoryFromURL = searchParams.get('category') || 'All';
-    if (categoryFromURL !== filters.category) {
-      setFilters((prev) => ({ ...prev, category: categoryFromURL }));
+    // When filters or search change, we need to reset to page 1
+    // We can detect that change by seeing if `page` is *not* 1
+    if (page !== 1) {
+      setPage(1);
+    } else {
+      // If page is already 1, just fetch
+      fetchProducts();
     }
-  }, [searchParams, filters.category]);
+  }, [filters, debouncedSearchQuery]);
 
-  // This hook now depends on the debouncedSearchQuery from the URL
+  // This hook fetches products *only* when page changes
   useEffect(() => {
-    setProducts([]);
-    setPage(1);
-    setHasMore(true);
-    fetchProducts(true);
-  }, [filters, scrollMode, debouncedSearchQuery]);
+    fetchProducts();
+  }, [page]);
 
-  const fetchProducts = async (reset = false) => {
+  const fetchProducts = async () => {
     try {
-      if (reset) setLoading(true);
-      const currentPage = reset ? 1 : page;
+      setLoading(true); // Set loading true for every fetch
       const params = {
-        page: currentPage,
+        page: page, // Use the current page state
         limit: 10,
         sort: filters.sort,
       };
@@ -107,21 +114,14 @@ const Home = () => {
       if (filters.minPrice) params.minPrice = filters.minPrice;
       if (filters.maxPrice) params.maxPrice = filters.maxPrice;
       if (filters.minRating) params.minRating = filters.minRating;
-      
-      // Use the debounced query from the URL
-      if (debouncedSearchQuery) params.search = debouncedSearchQuery; 
+      if (debouncedSearchQuery) params.search = debouncedSearchQuery;
 
-      const response = await productService.getProducts(params);
+      const response = await productService.getProducts(params); 
 
-      if (scrollMode === 'infinite') {
-        setProducts((prev) =>
-          reset ? response.products : [...prev, ...response.products]
-        );
-        setHasMore(currentPage < response.totalPages);
-      } else {
-        setProducts(response.products);
-      }
+      // Always set products (for grid/pagination mode)
+      setProducts(response.products);
       setTotalPages(response.totalPages);
+
     } catch (error) {
       toast.error('Failed to load products');
     } finally {
@@ -129,25 +129,10 @@ const Home = () => {
     }
   };
 
-  const loadMore = () => {
-    setPage((prev) => prev + 1);
-  };
-
-  useEffect(() => {
-    if (page > 1 && scrollMode === 'infinite') {
-      fetchProducts();
-    }
-  }, [page]);
-  
-  // This useEffect is new, for pagination mode ("grid")
-  useEffect(() => {
-    if (scrollMode === 'grid') {
-      fetchProducts();
-    }
-  }, [page, scrollMode]); // Re-fetch when page changes in grid mode
+  // const loadMore = () => { ... }; // <-- Removed
+  // useEffect(() => { ... }, [page]); // <-- Removed
 
   const handleAddToCart = async (productId) => {
-    // ... (your existing code)
     if (!isAuthenticated()) {
       toast.info('Please login to add items to cart');
       navigate('/login');
@@ -162,7 +147,6 @@ const Home = () => {
   };
 
   const toggleWishlist = (productId) => {
-    // ... (your existing code)
     setWishlist((prev) =>
       prev.includes(productId)
         ? prev.filter((id) => id !== productId)
@@ -172,7 +156,13 @@ const Home = () => {
 
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
-    setPage(1); 
+    setPage(1); // Reset page on filter change
+    
+    if (name === 'category' && value !== 'All') {
+        navigate(`/categories/${value}`, { replace: true });
+    } else if (name === 'category' && value === 'All') {
+        navigate('/products', { replace: true });
+    }
   };
 
   const handleResetFilters = () => {
@@ -183,31 +173,26 @@ const Home = () => {
       minRating: '',
       sort: '-createdAt',
     });
+    setSearchQuery('');
     setPage(1);
-    // 6. Clear search by navigating
-    navigate('/products'); 
+    navigate('/products', { replace: true });
   };
 
+  // Show loading spinner only on the *initial* load
   if (loading && products.length === 0) return <Loading />;
 
   return (
     <Box>
-      <Fab
-        // ... (your existing FAB code)
-        color="primary"
-        onClick={() => navigate('/cart')}
-        aria-label="cart"
-        sx={{ position: 'fixed', bottom: 30, right: 30, zIndex: 1200 }}
-      >
-        <Badge badgeContent={getCartCount()} color="error">
-          <ShoppingCart sx={{ color: 'white' }} />
-        </Badge>
-      </Fab>
-      
-      {/* 7. Only show Hero if no category or search is active */}
-      {!searchParams.get('category') && !searchQuery && <Hero />}
-
-      <Container maxWidth="xl" id="products-grid" sx={{ mb: 6 }}>
+      <Container maxWidth="xl" id="products-grid" sx={{ py: 4, mb: 6 }}>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          gutterBottom 
+          sx={{ fontWeight: 'bold', textTransform: 'capitalize', mb: 4 }}
+        >
+          {formatTitle(filters.category)}
+        </Typography>
+        
         <Paper
           elevation={0}
           sx={{
@@ -220,9 +205,29 @@ const Home = () => {
           }}
         >
           <Stack spacing={2}>
-          
-            {/* 8. --- SEARCH BAR REMOVED --- */}
-            {/* <TextField ... /> */}
+            <TextField
+              fullWidth
+              placeholder="Search in this category..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="medium"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                width: { xs: '100%', md: '50%' },
+                mx: 'auto',
+                '& .MMuiOutlinedInput-root': {
+                  borderRadius: '50px',
+                  bgcolor: 'grey.100',
+                  '&:hover': { bgcolor: 'grey.200' },
+                },
+              }}
+            />
 
             <Stack
               direction="row"
@@ -247,27 +252,14 @@ const Home = () => {
                   {isMobile ? 'Filters' : filtersOpen ? 'Hide Filters' : 'Show Filters'}
                 </Button>
 
-                {/* 9. --- TOGGLE BUTTONS UPDATED TO ICONS --- */}
-                <ToggleButtonGroup
-                  value={scrollMode}
-                  exclusive
-                  onChange={(e, value) => value && setScrollMode(value)}
-                  size="small"
-                  aria-label="layout mode"
-                >
-                  <ToggleButton value="grid" aria-label="grid view">
-                    <GridViewIcon />
-                  </ToggleButton>
-                  <ToggleButton value="infinite" aria-label="infinite scroll">
-                    <DensityMediumIcon />
-                  </ToggleButton>
-                </ToggleButtonGroup>
+                {/* --- TOGGLE BUTTONS REMOVED --- */}
+                {/* <ToggleButtonGroup ... >
+                </ToggleButtonGroup> */}
               </Stack>
             </Stack>
           </Stack>
         </Paper>
 
-        {/* ... (Rest of your Home.jsx layout: Grid, Drawer, ProductGrid) ... */}
         <Grid container spacing={4}>
           {!isMobile && filtersOpen && (
             <Grid size={{ md: 3 }}>
@@ -280,6 +272,7 @@ const Home = () => {
                   border: '1px solid',
                   borderColor: 'grey.200',
                   borderRadius: 2,
+                  bgcolor: 'background.paper',
                 }}
               >
                 <FilterSidebar filters={filters} handleFilterChange={handleFilterChange} />
@@ -291,7 +284,12 @@ const Home = () => {
             anchor="left"
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
-            sx={{ '& .MuiDrawer-paper': { width: '85%', maxWidth: 320 } }}
+            sx={{
+              '& .MMuiDrawer-paper': {
+                width: '85%',
+                maxWidth: 320,
+              },
+            }}
           >
             <FilterSidebar
               filters={filters}
@@ -312,10 +310,10 @@ const Home = () => {
           >
             <ProductGrid
               products={products}
-              loading={loading}
-              scrollMode={scrollMode}
-              loadMore={loadMore}
-              hasMore={hasMore}
+              loading={loading} // Pass loading state to show/hide spinners
+              scrollMode="grid" // Hardcode to "grid"
+              loadMore={() => {}} // Pass empty function
+              hasMore={false} // Hardcode to false
               filtersOpen={filtersOpen}
               wishlist={wishlist}
               onToggleWishlist={toggleWishlist}
@@ -333,4 +331,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default ProductListPage;

@@ -4,62 +4,36 @@ import {
   Typography,
   Grid,
   Box,
-  Card,
-  CardMedia,
-  CardContent,
-  CardActions,
-  Button,
-  Chip,
-  Rating,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
   Drawer,
   useMediaQuery,
   useTheme,
+  Paper,
+  Stack,
+  TextField,
+  InputAdornment,
+  Button,
   ToggleButtonGroup,
   ToggleButton,
-  Paper,
-  Badge,
-  Stack,
-  InputAdornment,
-  Collapse,
-  IconButton,
   Fab,
+  Badge,
 } from '@mui/material';
 import {
   FilterList,
-  ShoppingCart,
-  FavoriteBorder,
-  Favorite,
-  Close,
+  ChevronLeft,
+  ChevronRight,
   Search,
-  ExpandMore,
-  ExpandLess,
+  ShoppingCart,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import InfiniteScroll from 'react-infinite-scroll-component';
 import productService from '../../services/productService';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import Loading from '../../components/common/Loading';
 import Hero from '../../components/user/Hero';
 import useDebounce from '../../utils/useDebounce';
-
-const categories = [
-  'All',
-  'Living Room',
-  'Bedroom',
-  'Dining Room',
-  'Office',
-  'Outdoor',
-  'Storage',
-  'Decor',
-  'Kitchen',
-];
+import FilterSidebar from '../../components/user/FilterSidebar';
+import ProductGrid from '../../components/user/ProductGrid';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -72,16 +46,11 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false); // For mobile filter drawer
   const [scrollMode, setScrollMode] = useState('infinite');
   const [hasMore, setHasMore] = useState(true);
   const [wishlist, setWishlist] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedFilters, setExpandedFilters] = useState({
-    category: true,
-    price: true,
-    rating: true,
-  });
   const [filters, setFilters] = useState({
     category: 'All',
     minPrice: '',
@@ -89,6 +58,11 @@ const Home = () => {
     minRating: '',
     sort: '-createdAt',
   });
+  const [filtersOpen, setFiltersOpen] = useState(!isMobile);
+
+  useEffect(() => {
+    setFiltersOpen(!isMobile);
+  }, [isMobile]);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -166,336 +140,20 @@ const Home = () => {
   };
 
   const handleFilterChange = (name, value) => {
-    setFilters({ ...filters, [name]: value });
-    setPage(1);
+    setFilters((prev) => ({ ...prev, [name]: value }));
+    setPage(1); // Reset page on filter change
   };
 
-  // Filter Panel Component (to be used in Drawer and Sidebar)
-  const FilterPanel = () => (
-    <Box sx={{ p: isMobile ? 2 : 0 }}>
-      {isMobile && (
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Filters
-          </Typography>
-          <IconButton size="small" onClick={() => setDrawerOpen(false)}>
-            <Close />
-          </IconButton>
-        </Stack>
-      )}
-      <Box mb={3}>
-        <Button
-          fullWidth
-          onClick={() =>
-            setExpandedFilters({ ...expandedFilters, category: !expandedFilters.category })
-          }
-          sx={{
-            justifyContent: 'space-between',
-            textTransform: 'none',
-            color: 'text.primary',
-            fontWeight: 700,
-            fontSize: '1rem',
-            p: 0,
-            pr: 1,
-            '&:hover': { bgcolor: 'transparent' },
-          }}
-        >
-          Category
-          {expandedFilters.category ? <ExpandLess /> : <ExpandMore />}
-        </Button>
-        <Collapse in={expandedFilters.category}>
-          <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-            <Select
-              value={filters.category}
-              onChange={(e) => handleFilterChange('category', e.target.value)}
-            >
-              {categories.map((cat) => (
-                <MenuItem key={cat} value={cat}>
-                  {cat}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Collapse>
-      </Box>
-
-      <Box mb={3}>
-        <Button
-          fullWidth
-          onClick={() =>
-            setExpandedFilters({ ...expandedFilters, price: !expandedFilters.price })
-          }
-          sx={{
-            justifyContent: 'space-between',
-            textTransform: 'none',
-            color: 'text.primary',
-            fontWeight: 700,
-            fontSize: '1rem',
-            p: 0,
-            pr: 1,
-            '&:hover': { bgcolor: 'transparent' },
-          }}
-        >
-          Price Range
-          {expandedFilters.price ? <ExpandLess /> : <ExpandMore />}
-        </Button>
-        <Collapse in={expandedFilters.price}>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Min Price"
-              type="number"
-              size="small"
-              fullWidth
-              value={filters.minPrice}
-              onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-            />
-            <TextField
-              label="Max Price"
-              type="number"
-              size="small"
-              fullWidth
-              value={filters.maxPrice}
-              onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-            />
-          </Stack>
-        </Collapse>
-      </Box>
-
-      <Box mb={3}>
-        <Button
-          fullWidth
-          onClick={() =>
-            setExpandedFilters({ ...expandedFilters, rating: !expandedFilters.rating })
-          }
-          sx={{
-            justifyContent: 'space-between',
-            textTransform: 'none',
-            color: 'text.primary',
-            fontWeight: 700,
-            fontSize: '1rem',
-            p: 0,
-            pr: 1,
-            '&:hover': { bgcolor: 'transparent' },
-          }}
-        >
-          Rating
-          {expandedFilters.rating ? <ExpandLess /> : <ExpandMore />}
-        </Button>
-        <Collapse in={expandedFilters.rating}>
-          <FormControl fullWidth size="small" sx={{ mt: 1 }}>
-            <Select
-              value={filters.minRating}
-              onChange={(e) => handleFilterChange('minRating', e.target.value)}
-            >
-              <MenuItem value="">All Ratings</MenuItem>
-              <MenuItem value="4">⭐ 4+ Stars</MenuItem>
-              <MenuItem value="3">⭐ 3+ Stars</MenuItem>
-              <MenuItem value="2">⭐ 2+ Stars</MenuItem>
-            </Select>
-          </FormControl>
-        </Collapse>
-      </Box>
-
-      <Box mb={3}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
-          Sort By
-        </Typography>
-        <FormControl fullWidth size="small">
-          <Select
-            value={filters.sort}
-            onChange={(e) => handleFilterChange('sort', e.target.value)}
-          >
-            <MenuItem value="-createdAt">Newest First</MenuItem>
-            <MenuItem value="price">Price: Low to High</MenuItem>
-            <MenuItem value="-price">Price: High to Low</MenuItem>
-            <MenuItem value="-averageRating">Highest Rated</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
-
-      <Button
-        fullWidth
-        variant="outlined"
-        color="inherit"
-        onClick={() => {
-          setFilters({
-            category: 'All',
-            minPrice: '',
-            maxPrice: '',
-            minRating: '',
-            sort: '-createdAt',
-          });
-          setPage(1);
-        }}
-      >
-        Clear All
-      </Button>
-    </Box>
-  );
-
-  const ProductCard = ({ product }) => {
-    const isWishlisted = wishlist.includes(product._id);
-    const hasDiscount = product.salePrice && product.salePrice < product.price;
-    const discountPercent = hasDiscount
-      ? Math.round(((product.price - product.salePrice) / product.price) * 100)
-      : 0;
-
-    return (
-      <Card
-        sx={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          borderRadius: 2,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          '&:hover': {
-            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-          },
-        }}
-      >
-        <Box sx={{ position: 'relative', overflow: 'hidden' }}>
-          {hasDiscount && (
-            <Chip
-              label={`-${discountPercent}%`}
-              color="error"
-              size="small"
-              sx={{
-                position: 'absolute',
-                top: 12,
-                right: 12,
-                fontWeight: 700,
-                zIndex: 2,
-                fontSize: '0.7rem',
-              }}
-            />
-          )}
-          <CardMedia
-            component="img"
-            image={product.images?.[0]?.url || 'https://via.placeholder.com/300'}
-            alt={product.name}
-            onClick={() => navigate(`/product/${product._id}`)}
-            sx={{
-              aspectRatio: '1/1',
-              objectFit: 'contain',
-              width: '100%',
-              p: 2,
-              transition: 'transform 0.3s ease',
-              cursor: 'pointer',
-              '&:hover': {
-                transform: 'scale(1.05)',
-              },
-            }}
-          />
-          <IconButton
-            aria-label="add to wishlist"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleWishlist(product._id);
-            }}
-            sx={{
-              position: 'absolute',
-              top: 8,
-              left: 8,
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 2,
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              },
-            }}
-          >
-            {isWishlisted ? (
-              <Favorite sx={{ color: 'error.main' }} />
-            ) : (
-              <FavoriteBorder />
-            )}
-          </IconButton>
-        </Box>
-
-        <CardContent sx={{ flexGrow: 1, pb: 1, px: 2 }}>
-          <Chip
-            label={product.category}
-            size="small"
-            sx={{ mb: 1, fontSize: '0.7rem', height: 20, bgcolor: 'grey.100' }}
-          />
-          <Typography
-            gutterBottom
-            variant="h6"
-            component="h2"
-            onClick={() => navigate(`/product/${product._id}`)}
-            sx={{
-              fontWeight: 600,
-              fontSize: '1rem',
-              lineHeight: 1.4,
-              minHeight: '2.8em',
-              display: '-webkit-box',
-              overflow: 'hidden',
-              WebkitBoxOrient: 'vertical',
-              WebkitLineClamp: 2,
-              mb: 1,
-              color: 'text.primary',
-              cursor: 'pointer',
-              '&:hover': {
-                color: 'primary.main',
-              },
-            }}
-          >
-            {product.name}
-          </Typography>
-
-          <Stack direction="row" spacing={1} alignItems="center" mb={1.5}>
-            <Rating
-              value={product.averageRating || 0}
-              precision={0.5}
-              size="small"
-              readOnly
-            />
-            <Typography variant="caption" color="text.secondary">
-              ({product.numReviews || 0})
-            </Typography>
-          </Stack>
-
-          <Stack direction="row" spacing={1} alignItems="baseline">
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 700, color: 'primary.main' }}
-            >
-              ${hasDiscount ? product.salePrice.toFixed(2) : product.price.toFixed(2)}
-            </Typography>
-            {hasDiscount && (
-              <Typography
-                variant="body2"
-                sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
-              >
-                ${product.price.toFixed(2)}
-              </Typography>
-            )}
-          </Stack>
-        </CardContent>
-
-        <CardActions sx={{ pt: 0, px: 2, pb: 2 }}>
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={() => handleAddToCart(product._id)}
-            disabled={product.stock === 0}
-            sx={{
-              py: 1.25,
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              boxShadow: 'none',
-              '&:hover': {
-                boxShadow: 'none',
-                transform: 'translateY(-1px)'
-              },
-            }}
-          >
-            {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
-          </Button>
-        </CardActions>
-      </Card>
-    );
+  const handleResetFilters = () => {
+    setFilters({
+      category: 'All',
+      minPrice: '',
+      maxPrice: '',
+      minRating: '',
+      sort: '-createdAt',
+    });
+    setSearchQuery('');
+    setPage(1);
   };
 
   if (loading && products.length === 0) return <Loading />;
@@ -553,7 +211,7 @@ const Home = () => {
               sx={{
                 width: { xs: '100%', md: '50%' },
                 mx: 'auto',
-                '& .MUIOutlinedInput-root': {
+                '& .MuiOutlinedInput-root': {
                   borderRadius: '50px',
                   bgcolor: 'grey.100',
                   '&:hover': { bgcolor: 'grey.200' },
@@ -575,11 +233,13 @@ const Home = () => {
 
               <Stack direction="row" spacing={2} alignItems="center">
                 <Button
-                  startIcon={<FilterList />}
-                  onClick={() => setDrawerOpen(true)}
+                  startIcon={
+                    isMobile ? <FilterList /> : filtersOpen ? <ChevronLeft /> : <ChevronRight />
+                  }
+                  onClick={() => (isMobile ? setDrawerOpen(true) : setFiltersOpen(!filtersOpen))}
                   size="small"
                 >
-                  Filters
+                  {isMobile ? 'Filters' : filtersOpen ? 'Hide Filters' : 'Show Filters'}
                 </Button>
 
                 <ToggleButtonGroup
@@ -596,10 +256,9 @@ const Home = () => {
           </Stack>
         </Paper>
 
-        {/* --- GRID V2 SYNTAX FIX --- */}
         <Grid container spacing={4}>
-          {!isMobile && (
-            <Grid md={3}> {/* This is a Grid Item */}
+          {!isMobile && filtersOpen && (
+            <Grid size={{ md: 3 }}>
               <Paper
                 elevation={0}
                 sx={{
@@ -611,10 +270,7 @@ const Home = () => {
                   borderRadius: 2,
                 }}
               >
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                  Filters
-                </Typography>
-                <FilterPanel />
+                <FilterSidebar filters={filters} handleFilterChange={handleFilterChange} />
               </Paper>
             </Grid>
           )}
@@ -624,95 +280,45 @@ const Home = () => {
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
             sx={{
-              '& .MMuiDrawer-paper': {
+              '& .MuiDrawer-paper': {
                 width: '85%',
                 maxWidth: 320,
               },
             }}
           >
-            <FilterPanel />
+            <FilterSidebar
+              filters={filters}
+              handleFilterChange={handleFilterChange}
+              isMobile
+              onClose={() => setDrawerOpen(false)}
+            />
           </Drawer>
 
-          <Grid md={isMobile ? 12 : 9}> {/* This is a Grid Item */}
-            {loading && products.length === 0 ? (
-              <Box sx={{ width: '100%', minHeight: '300px' }}>
-                <Loading />
-              </Box>
-            ) : products.length === 0 ? (
-              <Box textAlign="center" py={8} sx={{ width: '100%' }}>
-                <Typography variant="h6" color="text.secondary" mb={2}>
-                  No products found for "{debouncedSearchQuery}"
-                </Typography>
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setFilters({
-                      category: 'All', minPrice: '', maxPrice: '', minRating: '', sort: '-createdAt',
-                    });
-                    setSearchQuery('');
-                    setPage(1);
-                  }}
-                >
-                  Reset Filters
-                </Button>
-              </Box>
-            ) : scrollMode === 'infinite' ? (
-              <InfiniteScroll
-                dataLength={products.length}
-                next={loadMore}
-                hasMore={hasMore}
-                loader={<Loading />}
-                endMessage={
-                  <Typography textAlign="center" py={3} color="text.secondary">
-                    You've seen all products
-                  </Typography>
-                }
-                style={{ overflow: 'visible', width: '100%' }}
-              >
-                <Grid container spacing={3}>
-                  {products.map((product) => (
-                    <Grid xs={12} sm={6} md={4} key={product._id}>
-                      <ProductCard product={product} />
-                    </Grid>
-                  ))}
-                </Grid>
-              </InfiniteScroll>
-            ) : (
-              <>
-                <Grid container spacing={3}>
-                  {products.map((product) => (
-                    <Grid xs={12} sm={6} md={4} key={product._id}>
-                      <ProductCard product={product} />
-                    </Grid>
-                  ))}
-                </Grid>
-
-                {totalPages > 1 && (
-                  <Stack
-                    direction="row"
-                    justifyContent="center"
-                    spacing={1}
-                    mt={4}
-                    sx={{ width: '100%' }}
-                  >
-                    <Button
-                      variant="outlined"
-                      disabled={page === 1}
-                      onClick={() => setPage(Math.max(1, page - 1))}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      disabled={page === totalPages}
-                      onClick={() => setPage(Math.min(totalPages, page + 1))}
-                    >
-                      Next
-                    </Button>
-                  </Stack>
-                )}
-              </>
-            )}
+          <Grid
+            size={{ md: isMobile ? 12 : filtersOpen ? 9 : 12 }}
+            sx={{
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.leavingScreen,
+              }),
+            }}
+          >
+            <ProductGrid
+              products={products}
+              loading={loading}
+              scrollMode={scrollMode}
+              loadMore={loadMore}
+              hasMore={hasMore}
+              filtersOpen={filtersOpen}
+              wishlist={wishlist}
+              onToggleWishlist={toggleWishlist}
+              onAddToCart={handleAddToCart}
+              onResetFilters={handleResetFilters}
+              searchQuery={debouncedSearchQuery}
+              totalPages={totalPages}
+              page={page}
+              setPage={setPage}
+            />
           </Grid>
         </Grid>
       </Container>

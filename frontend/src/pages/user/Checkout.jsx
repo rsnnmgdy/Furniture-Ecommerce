@@ -16,7 +16,6 @@ import {
   FormControlLabel,
   FormControl,
   FormLabel,
-  // Card, CardContent, // No longer used here
   Divider,
   Alert,
 } from '@mui/material';
@@ -84,11 +83,11 @@ const Checkout = () => {
         paymentMethod: values.paymentMethod,
       };
 
-      const response = await orderService.createOrder(orderData);
+      await orderService.createOrder(orderData);
       
       toast.success('Order placed successfully!');
       await clearCart();
-      navigate(`/orders`); // Redirect to orders page
+      navigate(`/orders`);
     } catch (error) {
       toast.error(error.message || 'Failed to place order');
     } finally {
@@ -125,18 +124,17 @@ const Checkout = () => {
       </Stepper>
 
       <form onSubmit={formik.handleSubmit}>
-        {/* --- GRID V2 SYNTAX FIX: Removed 'item' prop --- */}
+        {/* --- GRID V2 SYNTAX FIX --- */}
         <Grid container spacing={3}>
-          <Grid xs={12} md={8}>
+          <Grid size={{ xs: 12, md: 8 }}>
             <Paper sx={{ p: 3 }}>
-              {/* Step 1: Shipping Address */}
               {activeStep === 0 && (
                 <Box>
                   <Typography variant="h6" gutterBottom fontWeight={600}>
                     Shipping Address
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid xs={12}>
+                    <Grid size={{ xs: 12 }}>
                       <TextField
                         fullWidth
                         label="Street Address"
@@ -147,7 +145,7 @@ const Checkout = () => {
                         helperText={formik.touched.street && formik.errors.street}
                       />
                     </Grid>
-                    <Grid xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="City"
@@ -158,7 +156,7 @@ const Checkout = () => {
                         helperText={formik.touched.city && formik.errors.city}
                       />
                     </Grid>
-                    <Grid xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="State"
@@ -169,7 +167,7 @@ const Checkout = () => {
                         helperText={formik.touched.state && formik.errors.state}
                       />
                     </Grid>
-                    <Grid xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="ZIP Code"
@@ -180,7 +178,7 @@ const Checkout = () => {
                         helperText={formik.touched.zipCode && formik.errors.zipCode}
                       />
                     </Grid>
-                    <Grid xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="Country"
@@ -195,7 +193,6 @@ const Checkout = () => {
                 </Box>
               )}
 
-              {/* Step 2: Payment Method */}
               {activeStep === 1 && (
                 <Box>
                   <Typography variant="h6" gutterBottom fontWeight={600}>
@@ -231,7 +228,6 @@ const Checkout = () => {
                 </Box>
               )}
 
-              {/* Step 3: Review Order */}
               {activeStep === 2 && (
                 <Box>
                   <Typography variant="h6" gutterBottom fontWeight={600}>
@@ -276,7 +272,6 @@ const Checkout = () => {
                 </Box>
               )}
 
-              {/* Navigation Buttons */}
               <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
                 <Button
                   variant="outlined"
@@ -301,8 +296,7 @@ const Checkout = () => {
             </Paper>
           </Grid>
 
-          {/* Order Summary Sidebar */}
-          <Grid xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Paper sx={{ p: 3, position: 'sticky', top: 80, borderRadius: 2 }}>
               <Typography variant="h6" gutterBottom fontWeight={600}>
                 Order Summary

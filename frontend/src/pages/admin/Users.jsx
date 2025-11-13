@@ -157,9 +157,9 @@ const Users = () => {
         Users Management
       </Typography>
 
-      {/* Filters & Stats */}
+      {/* --- GRID V2 SYNTAX FIX --- */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">{users.length}</Typography>
             <Typography variant="body2" color="text.secondary">
@@ -167,7 +167,7 @@ const Users = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">
               {users.filter((u) => u.role === 'admin').length}
@@ -177,7 +177,7 @@ const Users = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">
               {users.filter((u) => u.isBlocked).length}
@@ -187,7 +187,7 @@ const Users = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">
               {users.filter((u) => u.role === 'user').length}
@@ -199,7 +199,6 @@ const Users = () => {
         </Grid>
       </Grid>
 
-      {/* Filter by Role */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <FormControl sx={{ minWidth: 200 }}>
           <InputLabel>Filter by Role</InputLabel>
@@ -222,14 +221,14 @@ const Users = () => {
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell fontWeight={600}>Avatar</TableCell>
-              <TableCell fontWeight={600}>Name</TableCell>
-              <TableCell fontWeight={600}>Email</TableCell>
-              <TableCell fontWeight={600}>Username</TableCell>
-              <TableCell fontWeight={600}>Role</TableCell>
-              <TableCell fontWeight={600}>Status</TableCell>
-              <TableCell fontWeight={600}>Joined</TableCell>
-              <TableCell fontWeight={600}>Actions</TableCell>
+              <TableCell>Avatar</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Username</TableCell>
+              <TableCell>Role</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Joined</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -237,7 +236,7 @@ const Users = () => {
               <React.Fragment key={user._id}>
                 <TableRow hover>
                   <TableCell>
-                    <Avatar src={user.photo?.url}>{user.name?.[0]}</Avatar>
+                    <Avatar src={user.photo?.url || ''}>{user.name?.[0]}</Avatar>
                   </TableCell>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -279,13 +278,12 @@ const Users = () => {
                   </TableCell>
                 </TableRow>
 
-                {/* Expanded User Details */}
                 <TableRow>
                   <TableCell colSpan={8} sx={{ py: 0 }}>
                     <Collapse in={expandedUser === user._id} timeout="auto">
                       <Box sx={{ p: 3, bgcolor: '#fafafa' }}>
                         <Grid container spacing={3}>
-                          <Grid item xs={12} md={6}>
+                          <Grid size={{ xs: 12, md: 6 }}>
                             <Typography variant="subtitle2" fontWeight={600} mb={1}>
                               Contact Information
                             </Typography>
@@ -299,7 +297,7 @@ const Users = () => {
                               <strong>Username:</strong> {user.username}
                             </Typography>
                           </Grid>
-                          <Grid item xs={12} md={6}>
+                          <Grid size={{ xs: 12, md: 6 }}>
                             <Typography variant="subtitle2" fontWeight={600} mb={1}>
                               Account Details
                             </Typography>
@@ -320,7 +318,6 @@ const Users = () => {
                           </Grid>
                         </Grid>
 
-                        {/* Action Buttons */}
                         <Box display="flex" gap={2} mt={3}>
                           <Button
                             variant="outlined"
@@ -369,7 +366,6 @@ const Users = () => {
         />
       </TableContainer>
 
-      {/* Actions Menu */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem onClick={() => handleUpdateRole('user')}>Make User</MenuItem>
         <MenuItem onClick={() => handleUpdateRole('admin')}>Make Admin</MenuItem>
@@ -390,7 +386,6 @@ const Users = () => {
         </MenuItem>
       </Menu>
 
-      {/* Reset Password Dialog */}
       <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)}>
         <DialogTitle>Reset Password for {selectedUser?.name}</DialogTitle>
         <DialogContent>
@@ -415,7 +410,6 @@ const Users = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Order History Dialog */}
       <Dialog
         open={orderHistoryDialogOpen}
         onClose={() => setOrderHistoryDialogOpen(false)}

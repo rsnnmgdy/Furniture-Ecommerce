@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; // Removed useEffect as it wasn't used
+import React, { useState } from 'react';
 import {
   Container,
   Paper,
@@ -20,8 +20,14 @@ import authService from '../../services/authService';
 const validationSchema = Yup.object({
   name: Yup.string().min(2).max(50).required('Name is required'),
   email: Yup.string().email('Invalid email').required('Email is required'),
-  phone: Yup.string(),
+  phone: Yup.string().matches(/^[0-9+-\s()]*$/, 'Invalid phone number').nullable(),
+  street: Yup.string(),
+  city: Yup.string(),
+  state: Yup.string(),
+  zipCode: Yup.string(),
+  country: Yup.string(),
 });
+
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -41,7 +47,7 @@ const Profile = () => {
       country: user?.address?.country || 'USA',
     },
     validationSchema,
-    enableReinitialize: true, // Ensures form updates if user data changes
+    enableReinitialize: true,
     onSubmit: async (values) => {
       try {
         setLoading(true);
@@ -51,7 +57,7 @@ const Profile = () => {
         formData.append('email', values.email);
         if (values.phone) formData.append('phone', values.phone);
         
-        // Send address as a structured object
+        // This format is what your backend updateProfile expects
         formData.append('address[street]', values.street);
         formData.append('address[city]', values.city);
         formData.append('address[state]', values.state);
@@ -92,7 +98,7 @@ const Profile = () => {
           <Box display="flex" flexDirection="column" alignItems="center" mb={4}>
             <Box position="relative">
               <Avatar
-                src={photoPreview || ''} // Handle empty string
+                src={photoPreview || ''}
                 sx={{ width: 120, height: 120, mb: 2 }}
               >
                 {user?.name?.[0]}
@@ -122,12 +128,12 @@ const Profile = () => {
             </Typography>
           </Box>
 
-          {/* --- GRID V2 SYNTAX FIX: Removed 'item' prop --- */}
+          {/* --- GRID V2 SYNTAX FIX --- */}
           <Typography variant="h6" gutterBottom fontWeight={600}>
             Basic Information
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Full Name"
@@ -138,7 +144,7 @@ const Profile = () => {
                 helperText={formik.touched.name && formik.errors.name}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Email"
@@ -150,16 +156,18 @@ const Profile = () => {
                 helperText={formik.touched.email && formik.errors.email}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Phone"
                 name="phone"
                 value={formik.values.phone}
                 onChange={formik.handleChange}
+                error={formik.touched.phone && Boolean(formik.errors.phone)}
+                helperText={formik.touched.phone && formik.errors.phone}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Username"
@@ -173,7 +181,7 @@ const Profile = () => {
             Address
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid xs={12}>
+            <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Street Address"
@@ -182,7 +190,7 @@ const Profile = () => {
                 onChange={formik.handleChange}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="City"
@@ -191,7 +199,7 @@ const Profile = () => {
                 onChange={formik.handleChange}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="State"
@@ -200,7 +208,7 @@ const Profile = () => {
                 onChange={formik.handleChange}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="ZIP Code"
@@ -209,7 +217,7 @@ const Profile = () => {
                 onChange={formik.handleChange}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Country"
@@ -219,7 +227,6 @@ const Profile = () => {
               />
             </Grid>
           </Grid>
-          {/* --- END GRID V2 FIX --- */}
 
           <Button
             type="submit"

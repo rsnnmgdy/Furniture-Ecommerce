@@ -22,7 +22,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Rating, // Removed TextField
+  Rating,
   Grid,
 } from '@mui/material';
 import { Delete, Visibility, FilterList, WarningAmber } from '@mui/icons-material';
@@ -33,6 +33,7 @@ import Loading from '../../components/common/Loading';
 
 const AdminReviews = () => {
   const [reviews, setReviews] = useState([]);
+  const [totalReviews, setTotalReviews] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -45,7 +46,7 @@ const AdminReviews = () => {
 
   useEffect(() => {
     fetchReviews();
-  }, [filterRating, filterProduct, page, rowsPerPage]); // Added page/rows to deps
+  }, [filterRating, filterProduct, page, rowsPerPage]);
 
   useEffect(() => {
     fetchProducts();
@@ -57,12 +58,12 @@ const AdminReviews = () => {
       const params = new URLSearchParams();
       if (filterRating > 0) params.append('rating', filterRating);
       if (filterProduct) params.append('product', filterProduct);
-      params.append('page', page + 1); // API is 1-based
+      params.append('page', page + 1);
       params.append('limit', rowsPerPage);
 
       const response = await api.get(`/admin/reviews?${params.toString()}`);
       setReviews(response.reviews || []);
-      // setTotalReviews(response.total || 0); // Need to add totalReviews state
+      setTotalReviews(response.total || 0);
     } catch {
       console.error('Failed to load reviews');
       toast.error('Failed to load reviews');
@@ -96,7 +97,7 @@ const AdminReviews = () => {
       toast.success('Review deleted successfully');
       setDeleteConfirmOpen(false);
       setSelectedReview(null);
-      fetchReviews(); // Refetch
+      fetchReviews();
     } catch (error) {
       toast.error(error.message || 'Failed to delete review');
     }
@@ -117,7 +118,9 @@ const AdminReviews = () => {
     setPage(0);
   };
 
-  if (loading && page === 0) return <Loading />; // Only show full loading on first load
+  const avgRating = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length || 0).toFixed(1);
+
+  if (loading && page === 0) return <Loading />;
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -177,48 +180,45 @@ const AdminReviews = () => {
         </Box>
       </Paper>
 
-      {/* --- GRID V2 SYNTAX FIX: Removed 'item' and `size` props --- */}
+      {/* --- GRID V2 SYNTAX FIX --- */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6">{reviews.length}</Typography>
+            <Typography variant="h6">{totalReviews}</Typography>
             <Typography variant="body2" color="text.secondary">
               Total Reviews
             </Typography>
           </Paper>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6">
-              {(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length || 0).toFixed(1)}
-            </Typography>
+            <Typography variant="h6">{avgRating}</Typography>
             <Typography variant="body2" color="text.secondary">
-              Average Rating
+              Avg. Rating (Page)
             </Typography>
           </Paper>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">
               {reviews.filter((r) => r.isFiltered).length}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Filtered (Bad Words)
+              Filtered (Page)
             </Typography>
           </Paper>
         </Grid>
-        <Grid xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">
               {reviews.filter((r) => r.rating >= 4).length}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Positive (4-5 Stars)
+              Positive (Page)
             </Typography>
           </Paper>
         </Grid>
       </Grid>
-      {/* --- END GRID V2 FIX --- */}
 
       <TableContainer component={Paper}>
         <Table>
@@ -235,7 +235,7 @@ const AdminReviews = () => {
           </TableHead>
           <TableBody>
             {reviews.length > 0 ? (
-              reviews.map((review) => ( // Removed pagination slice, as API handles it
+              reviews.map((review) => (
                 <TableRow key={review._id} hover>
                   <TableCell>
                     <Rating value={review.rating} readOnly size="small" />
@@ -316,7 +316,7 @@ const AdminReviews = () => {
         </Table>
         <TablePagination
           component="div"
-          count={-1} // Set to -1 to hide page count, as we don't have total from API yet
+          count={totalReviews}
           page={page}
           onPageChange={handlePageChange}
           rowsPerPage={rowsPerPage}
@@ -336,7 +336,6 @@ const AdminReviews = () => {
                 </Typography>
                 <Rating value={selectedReview.rating} readOnly />
               </Box>
-
               <Box mb={2}>
                 <Typography variant="subtitle2" gutterBottom>
                   Product
@@ -345,7 +344,6 @@ const AdminReviews = () => {
                   {selectedReview.product?.name || 'N/A'}
                 </Typography>
               </Box>
-
               <Box mb={2}>
                 <Typography variant="subtitle2" gutterBottom>
                   User
@@ -357,7 +355,6 @@ const AdminReviews = () => {
                   {selectedReview.user?.email}
                 </Typography>
               </Box>
-
               <Box mb={2}>
                 <Typography variant="subtitle2" gutterBottom>
                   Comment
@@ -366,7 +363,6 @@ const AdminReviews = () => {
                   {selectedReview.comment}
                 </Typography>
               </Box>
-
               <Box mb={2}>
                 <Typography variant="subtitle2" gutterBottom>
                   Status
@@ -382,7 +378,6 @@ const AdminReviews = () => {
                   />
                 </Box>
               </Box>
-
               <Box>
                 <Typography variant="subtitle2" gutterBottom>
                   Date

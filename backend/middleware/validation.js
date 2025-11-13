@@ -102,6 +102,11 @@ exports.productValidation = [
 
 // Review validation
 exports.reviewValidation = [
+  // --- ADD THIS ---
+  body('productId')
+    .notEmpty().withMessage('Product ID is required')
+    .isMongoId().withMessage('Invalid Product ID'),
+  // --- END ADD ---
   body('rating')
     .notEmpty().withMessage('Rating is required')
     .isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),

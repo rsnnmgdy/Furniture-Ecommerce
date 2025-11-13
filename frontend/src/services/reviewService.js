@@ -10,6 +10,11 @@ const reviewService = {
     await api.put(`/reviews/${id}`, reviewData),
   deleteReview: async (id) => await api.delete(`/reviews/${id}`),
   getMyReviews: async () => await api.get('/reviews/my-reviews'),
+
+  // --- ADD THIS NEW FUNCTION ---
+  checkCanReview: async (productId) =>
+    await api.get(`/reviews/can-review/${productId}`),
+  // --- END NEW FUNCTION ---
 };
 
 export default reviewService;

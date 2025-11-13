@@ -6,6 +6,7 @@ const {
   updateReview,
   deleteReview,
   getMyReviews,
+  canUserReview, // Import new function
 } = require('../controllers/reviewController');
 const { protect, authorize } = require('../middleware/auth');
 const { reviewValidation, validate } = require('../middleware/validation');
@@ -17,8 +18,10 @@ router.get('/product/:productId', getProductReviews);
 router.post('/', protect, reviewValidation, validate, createReview);
 router.get('/my-reviews', protect, getMyReviews);
 router.put('/:id', protect, reviewValidation, validate, updateReview);
+router.delete('/:id', protect, deleteReview);
 
-// Admin routes
-router.delete('/:id', protect, authorize('admin'), deleteReview);
+// --- ADD THIS NEW ROUTE ---
+router.get('/can-review/:productId', protect, canUserReview);
+// --- END NEW ROUTE ---
 
 module.exports = router;

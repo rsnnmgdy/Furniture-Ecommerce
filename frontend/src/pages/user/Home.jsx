@@ -24,7 +24,6 @@ import {
   Paper,
   Badge,
   Stack,
-  Divider,
   InputAdornment,
   Collapse,
   IconButton,
@@ -47,6 +46,8 @@ import productService from '../../services/productService';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import Loading from '../../components/common/Loading';
+import Hero from '../../components/user/Hero';
+import useDebounce from '../../utils/useDebounce';
 
 const categories = [
   'All',
@@ -76,7 +77,6 @@ const Home = () => {
   const [hasMore, setHasMore] = useState(true);
   const [wishlist, setWishlist] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(!isMobile);
   const [expandedFilters, setExpandedFilters] = useState({
     category: true,
     price: true,
@@ -90,12 +90,14 @@ const Home = () => {
     sort: '-createdAt',
   });
 
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
   useEffect(() => {
     setProducts([]);
     setPage(1);
     setHasMore(true);
     fetchProducts(true);
-  }, [filters, scrollMode, searchQuery]);
+  }, [filters, scrollMode, debouncedSearchQuery]);
 
   const fetchProducts = async (reset = false) => {
     try {
@@ -111,7 +113,7 @@ const Home = () => {
       if (filters.minPrice) params.minPrice = filters.minPrice;
       if (filters.maxPrice) params.maxPrice = filters.maxPrice;
       if (filters.minRating) params.minRating = filters.minRating;
-      if (searchQuery) params.search = searchQuery;
+      if (debouncedSearchQuery) params.search = debouncedSearchQuery;
 
       const response = await productService.getProducts(params);
 
@@ -147,7 +149,6 @@ const Home = () => {
       navigate('/login');
       return;
     }
-
     try {
       await addToCart(productId, 1);
       toast.success('Added to cart!');
@@ -169,9 +170,19 @@ const Home = () => {
     setPage(1);
   };
 
+  // Filter Panel Component (to be used in Drawer and Sidebar)
   const FilterPanel = () => (
-    <Box>
-      {/* Category Filter */}
+    <Box sx={{ p: isMobile ? 2 : 0 }}>
+      {isMobile && (
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Filters
+          </Typography>
+          <IconButton size="small" onClick={() => setDrawerOpen(false)}>
+            <Close />
+          </IconButton>
+        </Stack>
+      )}
       <Box mb={3}>
         <Button
           fullWidth
@@ -181,11 +192,12 @@ const Home = () => {
           sx={{
             justifyContent: 'space-between',
             textTransform: 'none',
-            color: '#333',
+            color: 'text.primary',
             fontWeight: 700,
-            fontSize: '0.95rem',
-            pl: 0,
+            fontSize: '1rem',
+            p: 0,
             pr: 1,
+            '&:hover': { bgcolor: 'transparent' },
           }}
         >
           Category
@@ -196,7 +208,6 @@ const Home = () => {
             <Select
               value={filters.category}
               onChange={(e) => handleFilterChange('category', e.target.value)}
-              sx={{ fontSize: '0.9rem' }}
             >
               {categories.map((cat) => (
                 <MenuItem key={cat} value={cat}>
@@ -208,7 +219,6 @@ const Home = () => {
         </Collapse>
       </Box>
 
-      {/* Price Filter */}
       <Box mb={3}>
         <Button
           fullWidth
@@ -218,11 +228,12 @@ const Home = () => {
           sx={{
             justifyContent: 'space-between',
             textTransform: 'none',
-            color: '#333',
+            color: 'text.primary',
             fontWeight: 700,
-            fontSize: '0.95rem',
-            pl: 0,
+            fontSize: '1rem',
+            p: 0,
             pr: 1,
+            '&:hover': { bgcolor: 'transparent' },
           }}
         >
           Price Range
@@ -237,7 +248,6 @@ const Home = () => {
               fullWidth
               value={filters.minPrice}
               onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-              sx={{ '& .MuiOutlinedInput-root': { fontSize: '0.9rem' } }}
             />
             <TextField
               label="Max Price"
@@ -246,13 +256,11 @@ const Home = () => {
               fullWidth
               value={filters.maxPrice}
               onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-              sx={{ '& .MuiOutlinedInput-root': { fontSize: '0.9rem' } }}
             />
           </Stack>
         </Collapse>
       </Box>
 
-      {/* Rating Filter */}
       <Box mb={3}>
         <Button
           fullWidth
@@ -262,11 +270,12 @@ const Home = () => {
           sx={{
             justifyContent: 'space-between',
             textTransform: 'none',
-            color: '#333',
+            color: 'text.primary',
             fontWeight: 700,
-            fontSize: '0.95rem',
-            pl: 0,
+            fontSize: '1rem',
+            p: 0,
             pr: 1,
+            '&:hover': { bgcolor: 'transparent' },
           }}
         >
           Rating
@@ -277,7 +286,6 @@ const Home = () => {
             <Select
               value={filters.minRating}
               onChange={(e) => handleFilterChange('minRating', e.target.value)}
-              sx={{ fontSize: '0.9rem' }}
             >
               <MenuItem value="">All Ratings</MenuItem>
               <MenuItem value="4">⭐ 4+ Stars</MenuItem>
@@ -288,16 +296,14 @@ const Home = () => {
         </Collapse>
       </Box>
 
-      {/* Sort By */}
       <Box mb={3}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
           Sort By
         </Typography>
         <FormControl fullWidth size="small">
           <Select
             value={filters.sort}
             onChange={(e) => handleFilterChange('sort', e.target.value)}
-            sx={{ fontSize: '0.9rem' }}
           >
             <MenuItem value="-createdAt">Newest First</MenuItem>
             <MenuItem value="price">Price: Low to High</MenuItem>
@@ -307,10 +313,10 @@ const Home = () => {
         </FormControl>
       </Box>
 
-      {/* Clear Filters */}
       <Button
         fullWidth
         variant="outlined"
+        color="inherit"
         onClick={() => {
           setFilters({
             category: 'All',
@@ -320,12 +326,6 @@ const Home = () => {
             sort: '-createdAt',
           });
           setPage(1);
-        }}
-        sx={{
-          textTransform: 'uppercase',
-          fontWeight: 600,
-          fontSize: '0.85rem',
-          letterSpacing: '0.3px',
         }}
       >
         Clear All
@@ -347,15 +347,14 @@ const Home = () => {
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
-          transition: 'transform 0.2s, box-shadow 0.2s',
+          borderRadius: 2,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
           '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
           },
         }}
       >
-        {/* Image Container */}
-        <Box sx={{ position: 'relative', paddingTop: '75%', overflow: 'hidden' }}>
+        <Box sx={{ position: 'relative', overflow: 'hidden' }}>
           {hasDiscount && (
             <Chip
               label={`-${discountPercent}%`}
@@ -363,10 +362,11 @@ const Home = () => {
               size="small"
               sx={{
                 position: 'absolute',
-                top: 8,
-                right: 8,
+                top: 12,
+                right: 12,
                 fontWeight: 700,
                 zIndex: 2,
+                fontSize: '0.7rem',
               }}
             />
           )}
@@ -376,13 +376,10 @@ const Home = () => {
             alt={product.name}
             onClick={() => navigate(`/product/${product._id}`)}
             sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
+              aspectRatio: '1/1',
               objectFit: 'contain',
               width: '100%',
-              height: '100%',
-              p: 1,
+              p: 2,
               transition: 'transform 0.3s ease',
               cursor: 'pointer',
               '&:hover': {
@@ -390,9 +387,8 @@ const Home = () => {
               },
             }}
           />
-
-          {/* Wishlist Button */}
-          <Box
+          <IconButton
+            aria-label="add to wishlist"
             onClick={(e) => {
               e.stopPropagation();
               toggleWishlist(product._id);
@@ -401,68 +397,70 @@ const Home = () => {
               position: 'absolute',
               top: 8,
               left: 8,
-              backgroundColor: 'white',
-              borderRadius: '50%',
-              p: 0.75,
-              display: 'flex',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 2,
               '&:hover': {
-                boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
-                transform: 'scale(1.1)',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
               },
             }}
           >
             {isWishlisted ? (
-              <Favorite sx={{ color: 'red', fontSize: '1.2rem' }} />
+              <Favorite sx={{ color: 'error.main' }} />
             ) : (
-              <FavoriteBorder sx={{ color: '#666', fontSize: '1.2rem' }} />
+              <FavoriteBorder />
             )}
-          </Box>
+          </IconButton>
         </Box>
 
-        {/* Content */}
-        <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+        <CardContent sx={{ flexGrow: 1, pb: 1, px: 2 }}>
           <Chip
             label={product.category}
             size="small"
-            sx={{ mb: 1, fontSize: '0.7rem', height: 20 }}
+            sx={{ mb: 1, fontSize: '0.7rem', height: 20, bgcolor: 'grey.100' }}
           />
           <Typography
+            gutterBottom
             variant="h6"
+            component="h2"
             onClick={() => navigate(`/product/${product._id}`)}
             sx={{
-              fontWeight: 500,
-              fontSize: '0.9rem',
+              fontWeight: 600,
+              fontSize: '1rem',
               lineHeight: 1.4,
-              minHeight: 40,
+              minHeight: '2.8em',
               display: '-webkit-box',
               overflow: 'hidden',
               WebkitBoxOrient: 'vertical',
               WebkitLineClamp: 2,
               mb: 1,
-              color: '#333',
+              color: 'text.primary',
               cursor: 'pointer',
               '&:hover': {
-                color: theme.palette.primary.main,
+                color: 'primary.main',
               },
             }}
           >
             {product.name}
           </Typography>
 
-          {/* Rating */}
-          <Stack direction="row" spacing={0.5} alignItems="center" mb={1}>
-            <Rating value={product.averageRating || 0} precision={0.5} size="small" readOnly />
+          <Stack direction="row" spacing={1} alignItems="center" mb={1.5}>
+            <Rating
+              value={product.averageRating || 0}
+              precision={0.5}
+              size="small"
+              readOnly
+            />
             <Typography variant="caption" color="text.secondary">
               ({product.numReviews || 0})
             </Typography>
           </Stack>
 
-          {/* Price */}
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
+          <Stack direction="row" spacing={1} alignItems="baseline">
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: 'primary.main' }}
+            >
               ${hasDiscount ? product.salePrice.toFixed(2) : product.price.toFixed(2)}
             </Typography>
             {hasDiscount && (
@@ -476,27 +474,24 @@ const Home = () => {
           </Stack>
         </CardContent>
 
-        {/* Action Button */}
         <CardActions sx={{ pt: 0, px: 2, pb: 2 }}>
           <Button
             fullWidth
             variant="contained"
             onClick={() => handleAddToCart(product._id)}
+            disabled={product.stock === 0}
             sx={{
-              backgroundColor: theme.palette.primary.main,
-              color: 'white',
-              py: 0.8,
+              py: 1.25,
               fontWeight: 600,
-              fontSize: '0.85rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.3px',
-              borderRadius: '2px',
+              fontSize: '0.9rem',
+              boxShadow: 'none',
               '&:hover': {
-                backgroundColor: theme.palette.primary.dark,
+                boxShadow: 'none',
+                transform: 'translateY(-1px)'
               },
             }}
           >
-            Add to Cart
+            {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
           </Button>
         </CardActions>
       </Card>
@@ -507,75 +502,44 @@ const Home = () => {
 
   return (
     <Box>
-      {/* Floating Shopping Cart Button */}
       <Fab
         color="primary"
         onClick={() => navigate('/cart')}
+        aria-label="cart"
         sx={{
           position: 'fixed',
           bottom: 30,
           right: 30,
-          backgroundColor: 'rgba(211, 47, 47, 0.9)',
-          color: 'white',
-          width: 60,
-          height: 60,
-          zIndex: 999,
-          boxShadow: '0 4px 12px rgba(211, 47, 47, 0.4)',
+          zIndex: 1200,
+          bgcolor: 'primary.main',
           '&:hover': {
-            backgroundColor: 'rgba(183, 28, 28, 0.95)',
-            boxShadow: '0 6px 16px rgba(211, 47, 47, 0.6)',
-            transform: 'scale(1.1)',
+            bgcolor: 'primary.dark',
           },
-          transition: 'all 0.3s ease',
         }}
       >
         <Badge badgeContent={getCartCount()} color="error">
-          <ShoppingCart sx={{ fontSize: '1.8rem' }} />
+          <ShoppingCart sx={{ color: 'white' }} />
         </Badge>
       </Fab>
 
-      {/* Premium Hero Banner */}
-      <Box
-        sx={{
-          background: 'linear-gradient(135deg, #8B4513 0%, #654321 100%)',
-          color: 'white',
-          py: 8,
-          mb: 4,
-          textAlign: 'center',
-        }}
-      >
-        <Container>
-          <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
-            Premium Furniture Collection
-          </Typography>
-          <Typography variant="h6" sx={{ mb: 3, opacity: 0.9 }}>
-            Discover exquisitely crafted furniture pieces that transform your living spaces.
-            Quality, style, and comfort in every design.
-          </Typography>
-          <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap">
-            {['Free Shipping', 'Quality Guaranteed', '30-Day Returns'].map((tag) => (
-              <Chip
-                key={tag}
-                label={tag}
-                sx={{
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  color: 'white',
-                  fontWeight: 600,
-                }}
-              />
-            ))}
-          </Stack>
-        </Container>
-      </Box>
+      <Hero />
 
-      <Container maxWidth="xl">
-        {/* Search & Filter Bar */}
-        <Paper elevation={0} sx={{ p: 2, mb: 3, backgroundColor: '#fafafa' }}>
+      <Container maxWidth="xl" id="products-grid" sx={{ mb: 6 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            mb: 4,
+            border: '1px solid',
+            borderColor: 'grey.200',
+            borderRadius: 2,
+            bgcolor: 'background.paper',
+          }}
+        >
           <Stack spacing={2}>
-            {/* Search Bar */}
             <TextField
               fullWidth
-              placeholder="Search products..."
+              placeholder="Search for sofas, chairs, tables..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               size="medium"
@@ -587,64 +551,42 @@ const Home = () => {
                 ),
               }}
               sx={{
-                width: { xs: '100%', md: 600 },
+                width: { xs: '100%', md: '50%' },
                 mx: 'auto',
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#f9f9f9',
-                  borderRadius: '6px',
-                  fontSize: '0.95rem',
-                  '&:hover': { backgroundColor: '#f5f5f5' },
-                  '&.Mui-focused': {
-                    backgroundColor: '#fff',
-                    boxShadow: '0 0 0 2px rgba(211, 47, 47, 0.1)',
-                  },
+                '& .MUIOutlinedInput-root': {
+                  borderRadius: '50px',
+                  bgcolor: 'grey.100',
+                  '&:hover': { bgcolor: 'grey.200' },
                 },
               }}
             />
 
-            {/* Filter Controls */}
             <Stack
               direction="row"
               justifyContent="space-between"
               alignItems="center"
               flexWrap="wrap"
               gap={2}
+              sx={{ px: 1 }}
             >
               <Typography variant="body2" color="text.secondary">
-                Showing {products.length} products
+                {loading ? 'Loading...' : `Showing ${products.length} products`}
               </Typography>
 
               <Stack direction="row" spacing={2} alignItems="center">
-                {!isMobile && (
-                  <Button
-                    startIcon={<FilterList />}
-                    onClick={() => setShowFilters(!showFilters)}
-                    size="small"
-                    sx={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 600 }}
-                  >
-                    Filters
-                  </Button>
-                )}
+                <Button
+                  startIcon={<FilterList />}
+                  onClick={() => setDrawerOpen(true)}
+                  size="small"
+                >
+                  Filters
+                </Button>
 
                 <ToggleButtonGroup
                   value={scrollMode}
                   exclusive
                   onChange={(e, value) => value && setScrollMode(value)}
                   size="small"
-                  sx={{
-                    backgroundColor: '#f5f5f5',
-                    '& .MuiToggleButton-root': {
-                      textTransform: 'uppercase',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      px: 2,
-                      border: 'none',
-                    },
-                    '& .MuiToggleButton-root.Mui-selected': {
-                      backgroundColor: '#333',
-                      color: 'white',
-                    },
-                  }}
                 >
                   <ToggleButton value="grid">Grid</ToggleButton>
                   <ToggleButton value="infinite">Scroll</ToggleButton>
@@ -654,87 +596,62 @@ const Home = () => {
           </Stack>
         </Paper>
 
-        {/* Main Content */}
-        <Grid container spacing={3}>
-          {/* Filter Sidebar */}
-          {!isMobile && showFilters && (
-            <Grid item xs={12} md={3}>
-              <Paper elevation={1} sx={{ p: 2, position: 'sticky', top: 20 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    Filters
-                  </Typography>
-                  <IconButton size="small" onClick={() => setShowFilters(false)}>
-                    <Close />
-                  </IconButton>
-                </Stack>
+        {/* --- GRID V2 SYNTAX FIX --- */}
+        <Grid container spacing={4}>
+          {!isMobile && (
+            <Grid md={3}> {/* This is a Grid Item */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  position: 'sticky',
+                  top: 90,
+                  border: '1px solid',
+                  borderColor: 'grey.200',
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                  Filters
+                </Typography>
                 <FilterPanel />
               </Paper>
             </Grid>
           )}
 
-          {/* Mobile Filter Drawer */}
           <Drawer
             anchor="left"
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
             sx={{
-              '& .MuiDrawer-paper': {
+              '& .MMuiDrawer-paper': {
                 width: '85%',
-                maxWidth: 300,
-                backgroundColor: '#fafafa',
-                p: 2,
+                maxWidth: 320,
               },
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                Filters
-              </Typography>
-              <IconButton size="small" onClick={() => setDrawerOpen(false)}>
-                <Close />
-              </IconButton>
-            </Stack>
             <FilterPanel />
           </Drawer>
 
-          {/* Products Grid */}
-          <Grid item xs={12} md={showFilters && !isMobile ? 9 : 12}>
-            {isMobile && (
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<FilterList />}
-                onClick={() => setDrawerOpen(true)}
-                sx={{
-                  textTransform: 'uppercase',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  mb: 3,
-                }}
-              >
-                Show Filters
-              </Button>
-            )}
-
-            {products.length === 0 ? (
-              <Box textAlign="center" py={8}>
+          <Grid md={isMobile ? 12 : 9}> {/* This is a Grid Item */}
+            {loading && products.length === 0 ? (
+              <Box sx={{ width: '100%', minHeight: '300px' }}>
+                <Loading />
+              </Box>
+            ) : products.length === 0 ? (
+              <Box textAlign="center" py={8} sx={{ width: '100%' }}>
                 <Typography variant="h6" color="text.secondary" mb={2}>
-                  No products found
+                  No products found for "{debouncedSearchQuery}"
                 </Typography>
                 <Button
                   variant="outlined"
                   onClick={() => {
                     setFilters({
-                      category: 'All',
-                      minPrice: '',
-                      maxPrice: '',
-                      minRating: '',
-                      sort: '-createdAt',
+                      category: 'All', minPrice: '', maxPrice: '', minRating: '', sort: '-createdAt',
                     });
+                    setSearchQuery('');
                     setPage(1);
                   }}
-                  sx={{ textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: 600 }}
                 >
                   Reset Filters
                 </Button>
@@ -747,13 +664,14 @@ const Home = () => {
                 loader={<Loading />}
                 endMessage={
                   <Typography textAlign="center" py={3} color="text.secondary">
-                    No more products to load
+                    You've seen all products
                   </Typography>
                 }
+                style={{ overflow: 'visible', width: '100%' }}
               >
                 <Grid container spacing={3}>
                   {products.map((product) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
+                    <Grid xs={12} sm={6} md={4} key={product._id}>
                       <ProductCard product={product} />
                     </Grid>
                   ))}
@@ -763,15 +681,20 @@ const Home = () => {
               <>
                 <Grid container spacing={3}>
                   {products.map((product) => (
-                    <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
+                    <Grid xs={12} sm={6} md={4} key={product._id}>
                       <ProductCard product={product} />
                     </Grid>
                   ))}
                 </Grid>
 
-                {/* Pagination Controls */}
                 {totalPages > 1 && (
-                  <Stack direction="row" justifyContent="center" spacing={1} mt={4}>
+                  <Stack
+                    direction="row"
+                    justifyContent="center"
+                    spacing={1}
+                    mt={4}
+                    sx={{ width: '100%' }}
+                  >
                     <Button
                       variant="outlined"
                       disabled={page === 1}
@@ -779,16 +702,6 @@ const Home = () => {
                     >
                       Previous
                     </Button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                      <Button
-                        key={pageNum}
-                        variant={page === pageNum ? 'contained' : 'outlined'}
-                        onClick={() => setPage(pageNum)}
-                        sx={{ minWidth: 40 }}
-                      >
-                        {pageNum}
-                      </Button>
-                    ))}
                     <Button
                       variant="outlined"
                       disabled={page === totalPages}

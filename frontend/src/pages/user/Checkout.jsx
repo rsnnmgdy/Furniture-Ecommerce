@@ -16,8 +16,7 @@ import {
   FormControlLabel,
   FormControl,
   FormLabel,
-  Card,
-  CardContent,
+  // Card, CardContent, // No longer used here
   Divider,
   Alert,
 } from '@mui/material';
@@ -89,7 +88,7 @@ const Checkout = () => {
       
       toast.success('Order placed successfully!');
       await clearCart();
-      navigate(`/orders`);
+      navigate(`/orders`); // Redirect to orders page
     } catch (error) {
       toast.error(error.message || 'Failed to place order');
     } finally {
@@ -126,8 +125,9 @@ const Checkout = () => {
       </Stepper>
 
       <form onSubmit={formik.handleSubmit}>
+        {/* --- GRID V2 SYNTAX FIX: Removed 'item' prop --- */}
         <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
+          <Grid xs={12} md={8}>
             <Paper sx={{ p: 3 }}>
               {/* Step 1: Shipping Address */}
               {activeStep === 0 && (
@@ -136,7 +136,7 @@ const Checkout = () => {
                     Shipping Address
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={12}>
+                    <Grid xs={12}>
                       <TextField
                         fullWidth
                         label="Street Address"
@@ -147,7 +147,7 @@ const Checkout = () => {
                         helperText={formik.touched.street && formik.errors.street}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid xs={12} sm={6}>
                       <TextField
                         fullWidth
                         label="City"
@@ -158,7 +158,7 @@ const Checkout = () => {
                         helperText={formik.touched.city && formik.errors.city}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid xs={12} sm={6}>
                       <TextField
                         fullWidth
                         label="State"
@@ -169,7 +169,7 @@ const Checkout = () => {
                         helperText={formik.touched.state && formik.errors.state}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid xs={12} sm={6}>
                       <TextField
                         fullWidth
                         label="ZIP Code"
@@ -180,7 +180,7 @@ const Checkout = () => {
                         helperText={formik.touched.zipCode && formik.errors.zipCode}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid xs={12} sm={6}>
                       <TextField
                         fullWidth
                         label="Country"
@@ -202,6 +202,7 @@ const Checkout = () => {
                     Payment Method
                   </Typography>
                   <FormControl component="fieldset">
+                    <FormLabel component="legend">Select a method</FormLabel>
                     <RadioGroup
                       name="paymentMethod"
                       value={formik.values.paymentMethod}
@@ -238,7 +239,7 @@ const Checkout = () => {
                   </Typography>
 
                   <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" gutterBottom>
+                    <Typography variant="subtitle1" gutterBottom fontWeight={500}>
                       Shipping Address:
                     </Typography>
                     <Typography variant="body2">
@@ -249,7 +250,7 @@ const Checkout = () => {
                   </Box>
 
                   <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" gutterBottom>
+                    <Typography variant="subtitle1" gutterBottom fontWeight={500}>
                       Payment Method:
                     </Typography>
                     <Typography variant="body2">
@@ -259,7 +260,7 @@ const Checkout = () => {
 
                   <Divider sx={{ my: 2 }} />
 
-                  <Typography variant="subtitle2" gutterBottom>
+                  <Typography variant="subtitle1" gutterBottom fontWeight={500}>
                     Order Items:
                   </Typography>
                   {cart.items.map((item) => (
@@ -301,8 +302,8 @@ const Checkout = () => {
           </Grid>
 
           {/* Order Summary Sidebar */}
-          <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 3, position: 'sticky', top: 80 }}>
+          <Grid xs={12} md={4}>
+            <Paper sx={{ p: 3, position: 'sticky', top: 80, borderRadius: 2 }}>
               <Typography variant="h6" gutterBottom fontWeight={600}>
                 Order Summary
               </Typography>
@@ -313,7 +314,7 @@ const Checkout = () => {
                 <Typography>{formatCurrency(subtotal)}</Typography>
               </Box>
               <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography>Tax:</Typography>
+                <Typography>Tax (8%):</Typography>
                 <Typography>{formatCurrency(tax)}</Typography>
               </Box>
               <Box display="flex" justifyContent="space-between" mb={2}>
@@ -322,6 +323,12 @@ const Checkout = () => {
                   {shipping === 0 ? 'FREE' : formatCurrency(shipping)}
                 </Typography>
               </Box>
+
+              {shipping > 0 && subtotal < 500 && (
+                 <Alert severity="info" sx={{ mb: 2, fontSize: '0.85rem' }}>
+                  Add {formatCurrency(500 - subtotal)} more for FREE shipping!
+                </Alert>
+              )}
 
               <Divider sx={{ my: 2 }} />
 

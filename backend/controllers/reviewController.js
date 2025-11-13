@@ -23,7 +23,7 @@ exports.createReview = async (req, res) => {
     const hasPurchased = await Order.findOne({
       user: req.user.id,
       'orderItems.product': productId,
-      status: { $in: ['Delivered', 'Completed'] },
+      status: { $in: ['Delivered', 'Completed'] }, // Only allow reviews for delivered/completed orders
     });
 
     if (!hasPurchased) {
@@ -72,7 +72,7 @@ exports.createReview = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: isFiltered 
+      message: isFiltered
         ? 'Review created successfully (some words were filtered)'
         : 'Review created successfully',
       review,
@@ -140,7 +140,7 @@ exports.updateReview = async (req, res) => {
 
     // Update fields
     if (req.body.rating) review.rating = req.body.rating;
-    
+
     if (req.body.comment) {
       // Filter bad words
       let filteredComment = req.body.comment;
@@ -175,9 +175,9 @@ exports.updateReview = async (req, res) => {
   }
 };
 
-// @desc    Delete review (MP3 - 5pts - Admin only)
+// @desc    Delete review (User or Admin)
 // @route   DELETE /api/reviews/:id
-// @access  Private/Admin
+// @access  Private
 exports.deleteReview = async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
@@ -189,8 +189,21 @@ exports.deleteReview = async (req, res) => {
       });
     }
 
+    // --- PERMISSION LOGIC ---
+    // Check if user is the review author OR an admin
+    if (
+      review.user.toString() !== req.user.id &&
+      req.user.role !== 'admin'
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to delete this review',
+      });
+    }
+    // --- END LOGIC ---
+
     const productId = review.product;
-    await review.deleteOne();
+    await review.deleteOne(); // Use deleteOne()
 
     // Update product rating
     const product = await Product.findById(productId);
@@ -231,3 +244,44 @@ exports.getMyReviews = async (req, res) => {
     });
   }
 };
+
+// --- ADD THIS NEW FUNCTION ---
+// @desc    Check if user can review a product
+// @route   GET /api/reviews/can-review/:productId
+// @access  Private
+exports.canUserReview = async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    // 1. Check if user has purchased this product
+    const hasPurchased = await Order.findOne({
+      user: req.user.id,
+      'orderItems.product': productId,
+      status: { $in: ['Delivered', 'Completed'] },
+    });
+
+    if (!hasPurchased) {
+      return res.json({ success: true, canReview: false, message: 'Must purchase to review.' });
+    }
+
+    // 2. Check if user has already reviewed this product
+    const existingReview = await Review.findOne({
+      user: req.user.id,
+      product: productId,
+    });
+
+    if (existingReview) {
+      return res.json({ success: true, canReview: false, message: 'Already reviewed.', review: existingReview });
+    }
+
+    // If purchased and not reviewed, they can review
+    res.json({ success: true, canReview: true });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+// --- END NEW FUNCTION ---

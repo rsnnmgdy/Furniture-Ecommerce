@@ -22,11 +22,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TextField,
-  Rating,
+  Rating, // Removed TextField
   Grid,
 } from '@mui/material';
-import { Delete, Visibility, FilterList } from '@mui/icons-material';
+import { Delete, Visibility, FilterList, WarningAmber } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { formatDate } from '../../utils/helpers';
@@ -46,7 +45,7 @@ const AdminReviews = () => {
 
   useEffect(() => {
     fetchReviews();
-  }, [filterRating, filterProduct]);
+  }, [filterRating, filterProduct, page, rowsPerPage]); // Added page/rows to deps
 
   useEffect(() => {
     fetchProducts();
@@ -58,18 +57,15 @@ const AdminReviews = () => {
       const params = new URLSearchParams();
       if (filterRating > 0) params.append('rating', filterRating);
       if (filterProduct) params.append('product', filterProduct);
+      params.append('page', page + 1); // API is 1-based
+      params.append('limit', rowsPerPage);
 
       const response = await api.get(`/admin/reviews?${params.toString()}`);
       setReviews(response.reviews || []);
+      // setTotalReviews(response.total || 0); // Need to add totalReviews state
     } catch {
       console.error('Failed to load reviews');
-      // Fallback: try to fetch from general endpoint
-      try {
-        const response = await api.get('/reviews/all');
-        setReviews(response.reviews || []);
-      } catch {
-        toast.error('Failed to load reviews');
-      }
+      toast.error('Failed to load reviews');
     } finally {
       setLoading(false);
     }
@@ -100,9 +96,9 @@ const AdminReviews = () => {
       toast.success('Review deleted successfully');
       setDeleteConfirmOpen(false);
       setSelectedReview(null);
-      fetchReviews();
-    } catch {
-      toast.error('Failed to delete review');
+      fetchReviews(); // Refetch
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete review');
     }
   };
 
@@ -121,12 +117,7 @@ const AdminReviews = () => {
     setPage(0);
   };
 
-  if (loading) return <Loading />;
-
-  const paginatedReviews = reviews.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
+  if (loading && page === 0) return <Loading />; // Only show full loading on first load
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -134,7 +125,6 @@ const AdminReviews = () => {
         Reviews Management
       </Typography>
 
-      {/* Filters Section */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
           <FormControl sx={{ minWidth: 150 }}>
@@ -187,9 +177,9 @@ const AdminReviews = () => {
         </Box>
       </Paper>
 
-      {/* Reviews Statistics */}
+      {/* --- GRID V2 SYNTAX FIX: Removed 'item' and `size` props --- */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">{reviews.length}</Typography>
             <Typography variant="body2" color="text.secondary">
@@ -197,7 +187,7 @@ const AdminReviews = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">
               {(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length || 0).toFixed(1)}
@@ -207,7 +197,7 @@ const AdminReviews = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">
               {reviews.filter((r) => r.isFiltered).length}
@@ -217,7 +207,7 @@ const AdminReviews = () => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">
               {reviews.filter((r) => r.rating >= 4).length}
@@ -228,24 +218,24 @@ const AdminReviews = () => {
           </Paper>
         </Grid>
       </Grid>
+      {/* --- END GRID V2 FIX --- */}
 
-      {/* Reviews Table */}
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell fontWeight={600}>Rating</TableCell>
-              <TableCell fontWeight={600}>Product</TableCell>
-              <TableCell fontWeight={600}>User</TableCell>
-              <TableCell fontWeight={600}>Comment</TableCell>
-              <TableCell fontWeight={600}>Status</TableCell>
-              <TableCell fontWeight={600}>Date</TableCell>
-              <TableCell fontWeight={600}>Actions</TableCell>
+              <TableCell>Rating</TableCell>
+              <TableCell>Product</TableCell>
+              <TableCell>User</TableCell>
+              <TableCell>Comment</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedReviews.length > 0 ? (
-              paginatedReviews.map((review) => (
+            {reviews.length > 0 ? (
+              reviews.map((review) => ( // Removed pagination slice, as API handles it
                 <TableRow key={review._id} hover>
                   <TableCell>
                     <Rating value={review.rating} readOnly size="small" />
@@ -277,19 +267,21 @@ const AdminReviews = () => {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Box display="flex" gap={1}>
+                    <Box display="flex" gap={1} flexDirection="column">
                       {review.isFiltered && (
                         <Chip
+                          icon={<WarningAmber fontSize="small" />}
                           label="Filtered"
                           size="small"
                           color="warning"
                           variant="outlined"
                         />
                       )}
-                      <Chip
-                        label={review.isApproved !== false ? 'Approved' : 'Pending'}
+                       <Chip
+                        label="Approved"
                         size="small"
-                        color={review.isApproved !== false ? 'success' : 'default'}
+                        color="success"
+                        variant="outlined"
                       />
                     </Box>
                   </TableCell>
@@ -316,7 +308,7 @@ const AdminReviews = () => {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                  <Typography color="text.secondary">No reviews found</Typography>
+                  <Typography color="text.secondary">No reviews found for these filters</Typography>
                 </TableCell>
               </TableRow>
             )}
@@ -324,7 +316,7 @@ const AdminReviews = () => {
         </Table>
         <TablePagination
           component="div"
-          count={reviews.length}
+          count={-1} // Set to -1 to hide page count, as we don't have total from API yet
           page={page}
           onPageChange={handlePageChange}
           rowsPerPage={rowsPerPage}
@@ -384,9 +376,9 @@ const AdminReviews = () => {
                     <Chip label="Bad Words Filtered" size="small" color="warning" />
                   )}
                   <Chip
-                    label={selectedReview.isApproved !== false ? 'Approved' : 'Pending'}
+                    label="Approved"
                     size="small"
-                    color={selectedReview.isApproved !== false ? 'success' : 'default'}
+                    color="success"
                   />
                 </Box>
               </Box>

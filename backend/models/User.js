@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
     photo: {
       url: {
         type: String,
-        default: 'https://res.cloudinary.com/demo/image/upload/avatar-default.png',
+        default: '', // --- FIX: Removed broken default URL ---
       },
       publicId: String,
     },

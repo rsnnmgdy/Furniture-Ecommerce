@@ -631,14 +631,14 @@ const sampleProducts = [
 ];
 
 // Sample users
-const sampleUsers = 
+const sampleUsers = [
+  {
     name: 'Admin User',
     email: 'admin@furniture.com',
     username: 'admin',
     password: 'Admin123',
     role: 'admin',
   },
-
   {
     name: 'Sarah Johnson',
     email: 'sarah@example.com',
@@ -735,13 +735,19 @@ const generateReviews = (productIds, userIds) => {
   productIds.forEach((productId, productIndex) => {
     const reviewCount = Math.floor(Math.random() * 4) + 3; // 3-6 reviews per product
     
+    // Ensure we don't use more users than available
+    const userPool = [...userIds].sort(() => 0.5 - Math.random());
+
     for (let i = 0; i < reviewCount; i++) {
-      const randomUserIndex = Math.floor(Math.random() * (userIds.length - 1)); // Exclude admin
+      // Pick a user for this review, ensuring one review per user per product
+      const userId = userPool.pop();
+      if (!userId) break; // Stop if we run out of users
+
       const randomCommentIndex = Math.floor(Math.random() * reviewComments.length);
       const randomRating = Math.floor(Math.random() * 3) + 3; // 3-5 stars
       
       reviews.push({
-        user: userIds[randomUserIndex],
+        user: userId,
         product: productId,
         rating: randomRating,
         comment: reviewComments[randomCommentIndex],
@@ -764,18 +770,35 @@ const seedDatabase = async () => {
     console.log('🗑️  Clearing existing data...');
     await Product.deleteMany({});
     await Review.deleteMany({});
-    const existingUsers = await User.find({});
-    if (existingUsers.length === 0) {
-      console.log('   ✅ No existing users to clear');
-    } else {
-      console.log(`   ✅ Found ${existingUsers.length} existing users`);
-    }
+    // Only delete non-admin users
+    await User.deleteMany({ role: { $ne: 'admin' } }); 
+    console.log('   ✅ Cleared products, reviews, and non-admin users.');
+
 
     // Create or verify users
     console.log('\n👤 Setting up users...');
     const users = [];
     
+    // Check for admin, create if it doesn't exist
+    let adminUser = await User.findOne({ email: 'admin@furniture.com' });
+    if (!adminUser) {
+      adminUser = await User.create({
+        name: 'Admin User',
+        email: 'admin@furniture.com',
+        username: 'admin',
+        password: 'Admin123',
+        role: 'admin',
+      });
+      console.log(`   ✅ Created: Admin User (admin@furniture.com)`);
+    } else {
+      console.log(`   ⏭️  Admin User (admin@furniture.com) already exists.`);
+    }
+    users.push(adminUser._id); // Add admin ID to user list
+
+    // Create other users
     for (const userData of sampleUsers) {
+      if (userData.email === 'admin@furniture.com') continue; // Skip admin
+      
       let user = await User.findOne({ email: userData.email });
       
       if (!user) {
@@ -796,10 +819,24 @@ const seedDatabase = async () => {
     // Generate and insert reviews
     console.log('\n⭐ Creating reviews...');
     const productIds = products.map(p => p._id);
-    const reviews = generateReviews(productIds, users);
+    const nonAdminUserIds = users.slice(1); // Exclude admin from writing reviews
+    const reviews = generateReviews(productIds, nonAdminUserIds);
     
     await Review.insertMany(reviews);
     console.log(`   ✅ Created ${reviews.length} reviews`);
+
+    // --- NEW FIX: Update Product Ratings ---
+    console.log('\n🔄 Calculating product ratings...');
+    let updatedCount = 0;
+    for (const productId of productIds) {
+      const product = await Product.findById(productId);
+      if (product) {
+        await product.calculateAverageRating(); // This method is in your Product.js model
+        updatedCount++;
+      }
+    }
+    console.log(`   ✅ Updated ratings for ${updatedCount} products.`);
+    // --- END OF NEW FIX ---
 
     console.log('\n' + '='.repeat(50));
     console.log('🎉 Database seeded successfully!');
@@ -807,14 +844,14 @@ const seedDatabase = async () => {
 
     console.log('📊 Summary:');
     console.log(`   📦 Products: ${products.length}`);
-    console.log(`   👥 Users: ${users.length}`);
+    console.log(`   👥 Users: ${users.length - 1} (plus 1 admin)`);
     console.log(`   ⭐ Reviews: ${reviews.length}`);
     console.log('\n🔐 Test Credentials:');
     console.log('   Admin:');
-    console.log('      Email: admin@furniture.com');
+    console.log('      Username: admin');
     console.log('      Password: Admin123');
     console.log('   Customer:');
-    console.log('      Email: sarah@example.com');
+    console.log('      Username: sarah_j');
     console.log('      Password: Test123');
     console.log('\n✅ You can now test the application!\n');
 

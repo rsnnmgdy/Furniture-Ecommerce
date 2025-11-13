@@ -117,9 +117,9 @@ const Dashboard = () => {
         Admin Dashboard
       </Typography>
 
-      {/* Stats Cards */}
+      {/* --- GRID V2 SYNTAX FIX: Removed 'item' prop --- */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <StatCard
             title="Total Products"
             value={stats?.totalProducts || 0}
@@ -127,7 +127,7 @@ const Dashboard = () => {
             color="primary"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <StatCard
             title="Total Users"
             value={stats?.totalUsers || 0}
@@ -135,7 +135,7 @@ const Dashboard = () => {
             color="secondary"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <StatCard
             title="Total Orders"
             value={stats?.totalOrders || 0}
@@ -143,7 +143,7 @@ const Dashboard = () => {
             color="success"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid xs={12} sm={6} md={3}>
           <StatCard
             title="Total Revenue"
             value={`$${stats?.totalRevenue || '0.00'}`}
@@ -153,16 +153,15 @@ const Dashboard = () => {
         </Grid>
       </Grid>
 
-      {/* Today's Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6}>
+        <Grid xs={12} sm={6}>
           <Alert severity="info" icon={<TrendingUp />}>
             <Typography variant="body2">
               <strong>Today's Orders:</strong> {stats?.todayOrders || 0}
             </Typography>
           </Alert>
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid xs={12} sm={6}>
           <Alert severity="success" icon={<AttachMoney />}>
             <Typography variant="body2">
               <strong>Today's Revenue:</strong> ${stats?.todayRevenue || '0.00'}
@@ -171,11 +170,9 @@ const Dashboard = () => {
         </Grid>
       </Grid>
 
-      {/* Charts Section (Quiz 2 requirement) */}
       {salesData && (
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          {/* Monthly Sales Line Chart (Quiz 2 - 10pts) */}
-          <Grid item xs={12} lg={8}>
+          <Grid xs={12} lg={8}>
             <Paper sx={{ p: 3 }}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6" fontWeight={600}>
@@ -220,8 +217,7 @@ const Dashboard = () => {
             </Paper>
           </Grid>
 
-          {/* Category Sales Pie Chart */}
-          <Grid item xs={12} lg={4}>
+          <Grid xs={12} lg={4}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" fontWeight={600} mb={2}>
                 Sales by Category
@@ -247,8 +243,7 @@ const Dashboard = () => {
             </Paper>
           </Grid>
 
-          {/* Sales Bar Chart (Alternative view) */}
-          <Grid item xs={12}>
+          <Grid xs={12}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" fontWeight={600} mb={2}>
                 Monthly Revenue Bar Chart
@@ -268,9 +263,8 @@ const Dashboard = () => {
         </Grid>
       )}
 
-      {/* Recent Orders Table */}
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={8}>
+        <Grid xs={12} lg={8}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" fontWeight={600} mb={2}>
               Recent Orders
@@ -306,8 +300,7 @@ const Dashboard = () => {
           </Paper>
         </Grid>
 
-        {/* Low Stock Products */}
-        <Grid item xs={12} lg={4}>
+        <Grid xs={12} lg={4}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" fontWeight={600} mb={2}>
               Low Stock Alert

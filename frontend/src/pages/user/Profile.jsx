@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react'; // Removed useEffect as it wasn't used
 import {
   Container,
   Paper,
@@ -41,6 +41,7 @@ const Profile = () => {
       country: user?.address?.country || 'USA',
     },
     validationSchema,
+    enableReinitialize: true, // Ensures form updates if user data changes
     onSubmit: async (values) => {
       try {
         setLoading(true);
@@ -50,13 +51,12 @@ const Profile = () => {
         formData.append('email', values.email);
         if (values.phone) formData.append('phone', values.phone);
         
-        formData.append('address', JSON.stringify({
-          street: values.street,
-          city: values.city,
-          state: values.state,
-          zipCode: values.zipCode,
-          country: values.country,
-        }));
+        // Send address as a structured object
+        formData.append('address[street]', values.street);
+        formData.append('address[city]', values.city);
+        formData.append('address[state]', values.state);
+        formData.append('address[zipCode]', values.zipCode);
+        formData.append('address[country]', values.country);
 
         if (photoFile) {
           formData.append('photo', photoFile);
@@ -83,17 +83,16 @@ const Profile = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper sx={{ p: 4 }}>
+      <Paper sx={{ p: 4, borderRadius: 2 }}>
         <Typography variant="h4" gutterBottom fontWeight={600}>
           My Profile
         </Typography>
 
         <form onSubmit={formik.handleSubmit}>
-          {/* Profile Photo */}
           <Box display="flex" flexDirection="column" alignItems="center" mb={4}>
             <Box position="relative">
               <Avatar
-                src={photoPreview}
+                src={photoPreview || ''} // Handle empty string
                 sx={{ width: 120, height: 120, mb: 2 }}
               >
                 {user?.name?.[0]}
@@ -123,12 +122,12 @@ const Profile = () => {
             </Typography>
           </Box>
 
-          {/* Basic Info */}
+          {/* --- GRID V2 SYNTAX FIX: Removed 'item' prop --- */}
           <Typography variant="h6" gutterBottom fontWeight={600}>
             Basic Information
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Full Name"
@@ -139,7 +138,7 @@ const Profile = () => {
                 helperText={formik.touched.name && formik.errors.name}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Email"
@@ -151,7 +150,7 @@ const Profile = () => {
                 helperText={formik.touched.email && formik.errors.email}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Phone"
@@ -160,7 +159,7 @@ const Profile = () => {
                 onChange={formik.handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Username"
@@ -170,12 +169,11 @@ const Profile = () => {
             </Grid>
           </Grid>
 
-          {/* Address */}
           <Typography variant="h6" gutterBottom fontWeight={600}>
             Address
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <TextField
                 fullWidth
                 label="Street Address"
@@ -184,7 +182,7 @@ const Profile = () => {
                 onChange={formik.handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="City"
@@ -193,7 +191,7 @@ const Profile = () => {
                 onChange={formik.handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="State"
@@ -202,7 +200,7 @@ const Profile = () => {
                 onChange={formik.handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="ZIP Code"
@@ -211,7 +209,7 @@ const Profile = () => {
                 onChange={formik.handleChange}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Country"
@@ -221,6 +219,7 @@ const Profile = () => {
               />
             </Grid>
           </Grid>
+          {/* --- END GRID V2 FIX --- */}
 
           <Button
             type="submit"

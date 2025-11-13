@@ -6,6 +6,11 @@ node_modules/
 .env.local
 .env.production
 
+# Firebase & Cloudinary credentials (SECURITY: NEVER COMMIT)
+config/serviceAccountKey.json
+config/sample.serviceAccountKey.json
+serviceAccountKey.json
+
 # Logs
 logs
 *.log
@@ -29,5 +34,6 @@ uploads/*
 dist/
 build/
 
-echo "backend/config/serviceAccountKey.json" >> .gitignore
-echo "backend/config/*.json" >> .gitignore
+
+backend/config/serviceAccountKey.json
+backend/config/sample.serviceAccountKey.json

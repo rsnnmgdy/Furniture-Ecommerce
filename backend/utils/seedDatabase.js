@@ -638,6 +638,7 @@ const sampleUsers =
     password: 'Admin123',
     role: 'admin',
   },
+
   {
     name: 'Sarah Johnson',
     email: 'sarah@example.com',

@@ -1,68 +1,41 @@
 const multer = require('multer');
-const CloudinaryStorage = require('multer-storage-cloudinary');
-const cloudinary = require('../config/cloudinary').cloudinary;
+const { uploadProductImages: rawUploadProductImages, uploadUserPhoto: rawUploadUserPhoto } = require('../config/cloudinary');
 
-// Product images storage
-const productStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'furniture/products',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [
-      { width: 1200, height: 1200, crop: 'limit' },
-      { quality: 'auto:good' }
-    ],
-  },
-});
-
-// User profile photo storage
-const userStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'furniture/users',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-    transformation: [
-      { width: 500, height: 500, crop: 'fill', gravity: 'face' },
-      { quality: 'auto' }
-    ],
-  },
-});
-
-// Create upload instances
-const uploadProductImages = multer({
-  storage: productStorage,
-  limits: { 
-    fileSize: 5 * 1024 * 1024, // 5MB
-    files: 10 // Max 10 images
-  },
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|webp/;
-    const mimetype = filetypes.test(file.mimetype);
-    
-    if (mimetype) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'));
-    }
-  }
-});
-
-const uploadUserPhoto = multer({
-  storage: userStorage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png/;
-    const mimetype = filetypes.test(file.mimetype);
-    
-    if (mimetype) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'));
-    }
-  }
-});
+// Wrapper to handle multer errors gracefully
+const handleUploadError = (upload) => {
+  return (req, res, next) => {
+    upload(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        console.error('❌ Multer Error:', err.code, err.message);
+        return res.status(400).json({
+          success: false,
+          message: `File upload error: ${err.message}`,
+          code: err.code
+        });
+      } else if (err) {
+        console.error('❌ Upload Error:', err.message);
+        return res.status(400).json({
+          success: false,
+          message: err.message
+        });
+      }
+      console.log('✅ Upload successful:', req.files?.length || 0, 'files');
+      if (req.files && req.files.length > 0) {
+        console.log('📸 Files details:', req.files.map(f => ({ 
+          name: f.originalname, 
+          size: f.size, 
+          buffer: f.buffer ? 'yes' : 'no',
+          path: f.path,
+          filename: f.filename
+        })));
+      }
+      next();
+    });
+  };
+};
 
 module.exports = {
-  uploadProductImages,
-  uploadUserPhoto,
+  uploadProductImages: rawUploadProductImages,
+  uploadUserPhoto: rawUploadUserPhoto,
+  handleUploadError,
 };

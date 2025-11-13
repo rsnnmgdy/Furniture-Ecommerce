@@ -1,54 +1,31 @@
+const authController = require('../controllers/authController');
 const express = require('express');
 const router = express.Router();
-
-// --- 1. Import your controllers ---
-// We remove 'register', 'login', and 'firebaseLogin' as they are no longer used.
 const {
+  register,
+  login,
+  firebaseLogin,
   getProfile,
   updateProfile,
-  forgotPassword,
-  resetPassword,
 } = require('../controllers/authController');
-
-// --- 2. Import your middleware ---
 const { protect } = require('../middleware/auth');
 const { uploadUserPhoto } = require('../middleware/upload');
 const {
-  // We remove 'registerValidation' and 'loginValidation'
+  registerValidation,
+  loginValidation,
   profileUpdateValidation,
   validate,
 } = require('../middleware/validation');
 
-// --- 3. Import the NEW Firebase middleware ---
-const { firebaseAuthCheck } = require('../middleware/firebaseAuthMiddleware');
+// Public routes
+router.post('/register', registerValidation, validate, register);
+router.post('/login', loginValidation, validate, login); // <-- This is the route you need
+router.post('/firebase-login', firebaseLogin); // <-- This is for Google/FB
 
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password/:token', authController.resetPassword);
 
-// === 4. NEW FIREBASE-ENABLED ROUTES ===
-// These match what your AuthContext is calling
-
-// @route   POST /api/auth/verify-token
-// @desc    Verify Firebase token (from any login) and get MongoDB user
-// @access  Private (requires Firebase token)
-router.post('/verify-token', firebaseAuthCheck, (req, res) => {
-  // The middleware did all the work and attached `req.user`
-  res.status(200).json({ user: req.user });
-});
-
-// @route   POST /api/auth/register
-// @desc    Register new email/pass user in MongoDB *after* Firebase creation
-// @access  Private (requires Firebase token)
-router.post('/register', firebaseAuthCheck, (req, res) => {
-  // The middleware found/created the user
-  res.status(201).json({ user: req.user });
-});
-
-
-// === 5. YOUR EXISTING ROUTES (Unchanged) ===
-
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password/:token', resetPassword);
-
-// Protected routes (these use your *original* 'protect' middleware)
+// Protected routes
 router.get('/profile', protect, getProfile);
 router.put(
   '/profile',

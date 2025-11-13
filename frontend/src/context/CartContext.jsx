@@ -13,7 +13,9 @@ export const useCart = () => {
   return context;
 };
 
-function CartProviderComponent({ children }) {
+// --- THIS IS THE HMR FIX ---
+// We export the provider component directly
+export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
   const { isAuthenticated } = useAuth();
@@ -104,5 +106,5 @@ function CartProviderComponent({ children }) {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
-CartProviderComponent.displayName = 'CartProvider';
-export const CartProvider = CartProviderComponent;
+// Set display name for easier debugging
+CartProvider.displayName = 'CartProvider';

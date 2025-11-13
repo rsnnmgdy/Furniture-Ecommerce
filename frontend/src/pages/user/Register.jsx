@@ -30,13 +30,14 @@ const validationSchema = Yup.object({
 
 const Register = () => {
   const navigate = useNavigate();
+  // --- 1. Get ALL auth functions from context ---
   const { register, signInWithGoogle, signInWithFacebook, user } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // This watches for the user state to change, THEN navigates
+  // This useEffect redirects on successful social login
   useEffect(() => {
     if (user) {
       toast.success('Welcome! Registration successful!');
@@ -57,23 +58,25 @@ const Register = () => {
       try {
         setLoading(true);
         setError('');
-        await register(values.name, values.email, values.password);
+        // --- 2. Call the JWT register function ---
+        await register(values.name, values.email, values.password, values.username);
         toast.success('Registration successful! Please login.');
         navigate('/login');
       } catch (err) {
-        setError(err.message || 'Registration failed');
+        setError(err.response?.data?.message || 'Registration failed');
       } finally {
         setLoading(false);
       }
     },
   });
 
+  // --- 3. Google Login Handler ---
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       setError('');
       await signInWithGoogle();
-      // The useEffect will handle the toast and navigation
+      // The useEffect will handle success
     } catch (err) {
       setError(err.message || 'Google signup failed');
       toast.error('Google signup failed. Please try again.');
@@ -81,12 +84,13 @@ const Register = () => {
     }
   };
 
+  // --- 4. Facebook Login Handler ---
   const handleFacebookLogin = async () => {
     try {
       setLoading(true);
       setError('');
       await signInWithFacebook();
-      // The useEffect will handle the toast and navigation
+      // The useEffect will handle success
     } catch (err) {
       setError(err.message || 'Facebook signup failed');
       toast.error('Facebook signup failed. Please try again.');
@@ -123,7 +127,7 @@ const Register = () => {
             </Alert>
           )}
 
-          {/* === THIS IS THE JSX FIX === */}
+          {/* === 5. THIS IS THE JSX FIX === */}
           <Stack spacing={1.5} sx={{ mb: 3 }}>
             <Button
               fullWidth

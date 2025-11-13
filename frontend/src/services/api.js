@@ -37,12 +37,20 @@ api.interceptors.response.use(
     const message = error.response?.data?.message || error.message || 'An error occurred';
     
     // Handle 401 - Unauthorized
+    // BUT: Don't redirect on auth endpoints (they handle 401 themselves)
     if (error.response?.status === 401) {
-      console.warn('Unauthorized - clearing tokens and redirecting to login');
-      localStorage.removeItem('token');
-      localStorage.removeItem('firebaseToken');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const url = error.config?.url || '';
+      const isAuthEndpoint = url.includes('/auth/verify-token') || url.includes('/auth/register');
+      
+      if (!isAuthEndpoint) {
+        console.warn('Unauthorized - clearing tokens and redirecting to login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('firebaseToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      } else {
+        console.warn('Auth endpoint returned 401:', message);
+      }
     }
     
     return Promise.reject({ message, status: error.response?.status, data: error.response?.data });

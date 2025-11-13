@@ -19,16 +19,14 @@ const productService = {
 
   // Create product (Admin)
   createProduct: async (formData) => {
-    return await api.post('/products', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // Let the browser/axios set the Content-Type (including boundary)
+    return await api.post('/products', formData);
   },
 
   // Update product (Admin)
   updateProduct: async (id, formData) => {
-    return await api.put(`/products/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // Let the browser/axios set the Content-Type (including boundary)
+    return await api.put(`/products/${id}`, formData);
   },
 
   // Delete product (Admin)

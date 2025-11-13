@@ -11,7 +11,7 @@ const {
   getFeaturedProducts,
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/auth');
-const { uploadProductImages } = require('../middleware/upload');
+const { uploadProductImages, handleUploadError } = require('../middleware/upload');
 const { productValidation, validate } = require('../middleware/validation');
 
 // Public routes
@@ -24,7 +24,12 @@ router.post(
   '/',
   protect,
   authorize('admin'),
-  uploadProductImages.array('images', 10), // Max 10 images
+  handleUploadError(uploadProductImages.array('images', 10)),
+  (req, res, next) => {
+    console.log('📝 POST /products - Files received:', req.files?.length || 0);
+    console.log('📝 POST /products - Body keys:', req.body ? Object.keys(req.body) : 'NO BODY');
+    next();
+  },
   productValidation,
   validate,
   createProduct
@@ -34,7 +39,12 @@ router.put(
   '/:id',
   protect,
   authorize('admin'),
-  uploadProductImages.array('images', 10),
+  handleUploadError(uploadProductImages.array('images', 10)),
+  (req, res, next) => {
+    console.log('📝 PUT /products/:id - Files received:', req.files?.length || 0);
+    console.log('📝 PUT /products/:id - Body keys:', req.body ? Object.keys(req.body) : 'NO BODY');
+    next();
+  },
   updateProduct
 );
 

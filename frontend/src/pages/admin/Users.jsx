@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
-  Paper,
+  Box,
+  Card,
+  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -20,29 +22,26 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Box,
-  Grid,
   TextField,
   FormControl,
   InputLabel,
   Select,
-  Collapse,
+  Grid,
   Divider,
-  Alert,
 } from '@mui/material';
 import {
   MoreVert,
-  ExpandMore,
-  ExpandLess,
   Block,
   CheckCircle,
+  Shield,
   VpnKey,
-  History,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { formatDate } from '../../utils/helpers';
 import Loading from '../../components/common/Loading';
+
+const PRIMARY_GRADIENT = 'linear-gradient(135deg, #C67C4E 0%, #8B6F47 100%)';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -51,13 +50,10 @@ const Users = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [expandedUser, setExpandedUser] = useState(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [orderHistoryDialogOpen, setOrderHistoryDialogOpen] = useState(false);
-  const [userOrders, setUserOrders] = useState([]);
-  const [newPassword, setNewPassword] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -68,7 +64,6 @@ const Users = () => {
       setLoading(true);
       const params = new URLSearchParams();
       if (roleFilter) params.append('role', roleFilter);
-      
       const response = await api.get(`/admin/users?${params.toString()}&limit=100`);
       setUsers(response.users);
     } catch (error) {
@@ -102,11 +97,11 @@ const Users = () => {
     try {
       const newStatus = !selectedUser.isBlocked;
       await api.put(`/admin/users/${selectedUser._id}/block`, { isBlocked: newStatus });
-      toast.success(newStatus ? 'User blocked successfully' : 'User unblocked successfully');
+      toast.success(newStatus ? 'User blocked' : 'User unblocked');
       handleMenuClose();
       fetchUsers();
     } catch (error) {
-      toast.error('Failed to update user block status');
+      toast.error('Failed to update user');
     }
   };
 
@@ -126,332 +121,166 @@ const Users = () => {
     }
   };
 
-  const handleViewOrderHistory = async (user) => {
-    try {
-      const response = await api.get(`/admin/users/${user._id}/orders`);
-      setUserOrders(response.orders || []);
-      setSelectedUser(user);
-      setOrderHistoryDialogOpen(true);
-      handleMenuClose();
-    } catch (error) {
-      toast.error('Failed to load order history');
-    }
-  };
-
-  const handlePageChange = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleRowsPerPageChange = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
   if (loading) return <Loading />;
 
   const paginatedUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom fontWeight={600}>
-        Users Management
-      </Typography>
+    <Container maxWidth="xl" sx={{ py: 4, backgroundColor: '#FAFAFA', minHeight: '100vh' }}>
+      {/* Header */}
+      <Box mb={4}>
+        <Typography variant="h3" fontWeight={700} sx={{ background: PRIMARY_GRADIENT, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+          Users
+        </Typography>
+        <Typography variant="body1" color="textSecondary" sx={{ mt: 1 }}>
+          Manage user accounts and permissions
+        </Typography>
+      </Box>
 
-      {/* --- GRID V2 SYNTAX FIX --- */}
+      {/* Summary Stats */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6">{users.length}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Total Users
-            </Typography>
-          </Paper>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: '12px', border: '1px solid #E8E8E8' }}>
+            <CardContent sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h6" fontWeight={700}>{users.length}</Typography>
+              <Typography variant="caption" color="textSecondary">Total Users</Typography>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6">
-              {users.filter((u) => u.role === 'admin').length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Admins
-            </Typography>
-          </Paper>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: '12px', border: '1px solid #E8E8E8' }}>
+            <CardContent sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h6" fontWeight={700}>{users.filter(u => u.role === 'admin').length}</Typography>
+              <Typography variant="caption" color="textSecondary">Admins</Typography>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6">
-              {users.filter((u) => u.isBlocked).length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Blocked Users
-            </Typography>
-          </Paper>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: '12px', border: '1px solid #E8E8E8' }}>
+            <CardContent sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h6" fontWeight={700}>{users.filter(u => u.isBlocked).length}</Typography>
+              <Typography variant="caption" color="textSecondary">Blocked</Typography>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6">
-              {users.filter((u) => u.role === 'user').length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Regular Users
-            </Typography>
-          </Paper>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ borderRadius: '12px', border: '1px solid #E8E8E8' }}>
+            <CardContent sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h6" fontWeight={700}>{users.filter(u => u.role === 'user').length}</Typography>
+              <Typography variant="caption" color="textSecondary">Regular Users</Typography>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
 
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>Filter by Role</InputLabel>
-          <Select
-            value={roleFilter}
-            label="Filter by Role"
-            onChange={(e) => {
-              setRoleFilter(e.target.value);
-              setPage(0);
-            }}
-          >
-            <MenuItem value="">All Users</MenuItem>
-            <MenuItem value="admin">Admins</MenuItem>
-            <MenuItem value="user">Regular Users</MenuItem>
-          </Select>
-        </FormControl>
-      </Paper>
+      {/* Filter */}
+      <Card sx={{ mb: 3, borderRadius: '12px', border: '1px solid #E8E8E8' }}>
+        <CardContent sx={{ p: 2 }}>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Filter by Role</InputLabel>
+            <Select value={roleFilter} label="Filter by Role" onChange={(e) => { setRoleFilter(e.target.value); setPage(0); }}>
+              <MenuItem value="">All Users</MenuItem>
+              <MenuItem value="admin">Admins</MenuItem>
+              <MenuItem value="user">Regular Users</MenuItem>
+            </Select>
+          </FormControl>
+        </CardContent>
+      </Card>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell>Avatar</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Username</TableCell>
-              <TableCell>Role</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Joined</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedUsers.map((user) => (
-              <React.Fragment key={user._id}>
-                <TableRow hover>
+      {/* Users Table */}
+      <Card sx={{ borderRadius: '12px', border: '1px solid #E8E8E8', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#FAFAFA' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>User</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Email</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Username</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Role</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Joined</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }} align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedUsers.map((user) => (
+                <TableRow key={user._id} sx={{ '&:hover': { backgroundColor: '#FAFAFA' } }}>
                   <TableCell>
-                    <Avatar src={user.photo?.url || ''}>{user.name?.[0]}</Avatar>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Avatar src={user.photo?.url || ''} sx={{ width: 40, height: 40 }}>
+                        {user.name?.[0]}
+                      </Avatar>
+                      <Typography variant="body2" fontWeight={600}>{user.name}</Typography>
+                    </Box>
                   </TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.username}</TableCell>
+                  <TableCell sx={{ fontSize: '14px' }}>{user.email}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#2C2C2C' }}>{user.username}</TableCell>
                   <TableCell>
                     <Chip
                       label={user.role}
-                      color={user.role === 'admin' ? 'error' : 'default'}
                       size="small"
+                      sx={{ background: user.role === 'admin' ? 'linear-gradient(135deg, #FF6B6B20, #FF6B6B10)' : 'linear-gradient(135deg, #C67C4E20, #C67C4E10)', color: user.role === 'admin' ? '#FF6B6B' : '#C67C4E', fontWeight: 600 }}
                     />
                   </TableCell>
                   <TableCell>
                     <Chip
                       icon={user.isBlocked ? <Block /> : <CheckCircle />}
                       label={user.isBlocked ? 'Blocked' : 'Active'}
-                      color={user.isBlocked ? 'error' : 'success'}
                       size="small"
-                      variant="outlined"
+                      sx={{ background: user.isBlocked ? 'linear-gradient(135deg, #FF6B6B20, #FF6B6B10)' : 'linear-gradient(135deg, #4CAF5020, #4CAF5010)', color: user.isBlocked ? '#FF6B6B' : '#4CAF50', fontWeight: 600 }}
                     />
                   </TableCell>
-                  <TableCell>{formatDate(user.createdAt)}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        setExpandedUser(expandedUser === user._id ? null : user._id)
-                      }
-                      title="View Details"
-                    >
-                      {expandedUser === user._id ? <ExpandLess /> : <ExpandMore />}
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuOpen(e, user)}
-                      title="More Actions"
-                    >
-                      <MoreVert />
+                  <TableCell sx={{ fontSize: '14px', color: '#666' }}>{formatDate(user.createdAt)}</TableCell>
+                  <TableCell align="center">
+                    <IconButton size="small" onClick={(e) => handleMenuOpen(e, user)} sx={{ color: '#8B6F47' }}>
+                      <MoreVert fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination component="div" count={users.length} rowsPerPage={rowsPerPage} page={page} onPageChange={(e, newPage) => setPage(newPage)} onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value))} sx={{ borderTop: '1px solid #EFEFEF', backgroundColor: '#FAFAFA' }} />
+      </Card>
 
-                <TableRow>
-                  <TableCell colSpan={8} sx={{ py: 0 }}>
-                    <Collapse in={expandedUser === user._id} timeout="auto">
-                      <Box sx={{ p: 3, bgcolor: '#fafafa' }}>
-                        <Grid container spacing={3}>
-                          <Grid size={{ xs: 12, md: 6 }}>
-                            <Typography variant="subtitle2" fontWeight={600} mb={1}>
-                              Contact Information
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Email:</strong> {user.email}
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Phone:</strong> {user.phone || 'N/A'}
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Username:</strong> {user.username}
-                            </Typography>
-                          </Grid>
-                          <Grid size={{ xs: 12, md: 6 }}>
-                            <Typography variant="subtitle2" fontWeight={600} mb={1}>
-                              Account Details
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Role:</strong> {user.role}
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Status:</strong>{' '}
-                              {user.isBlocked ? (
-                                <Chip label="Blocked" size="small" color="error" />
-                              ) : (
-                                <Chip label="Active" size="small" color="success" />
-                              )}
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Joined:</strong> {formatDate(user.createdAt)}
-                            </Typography>
-                          </Grid>
-                        </Grid>
-
-                        <Box display="flex" gap={2} mt={3}>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<History />}
-                            onClick={() => handleViewOrderHistory(user)}
-                          >
-                            View Orders
-                          </Button>
-                          {user.role === 'user' && (
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={(e) => handleMenuOpen(e, user)}
-                            >
-                              Manage Roles
-                            </Button>
-                          )}
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<VpnKey />}
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setPasswordDialogOpen(true);
-                            }}
-                          >
-                            Reset Password
-                          </Button>
-                        </Box>
-                      </Box>
-                    </Collapse>
-                  </TableCell>
-                </TableRow>
-              </React.Fragment>
-            ))}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component="div"
-          count={users.length}
-          page={page}
-          onPageChange={handlePageChange}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleRowsPerPageChange}
-        />
-      </TableContainer>
-
+      {/* Actions Menu */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={() => handleUpdateRole('user')}>Make User</MenuItem>
-        <MenuItem onClick={() => handleUpdateRole('admin')}>Make Admin</MenuItem>
+        <MenuItem onClick={() => { handleUpdateRole('admin'); }}>
+          <Shield sx={{ mr: 1, fontSize: 18 }} /> Make Admin
+        </MenuItem>
+        <MenuItem onClick={() => { handleUpdateRole('user'); }}>
+          <Shield sx={{ mr: 1, fontSize: 18 }} /> Make User
+        </MenuItem>
         <Divider />
+        <MenuItem onClick={() => { setPasswordDialogOpen(true); handleMenuClose(); }}>
+          <VpnKey sx={{ mr: 1, fontSize: 18 }} /> Reset Password
+        </MenuItem>
         <MenuItem onClick={handleToggleBlock}>
-          {selectedUser?.isBlocked ? '✓ Unblock User' : '✗ Block User'}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            setPasswordDialogOpen(true);
-            handleMenuClose();
-          }}
-        >
-          Reset Password
-        </MenuItem>
-        <MenuItem onClick={() => handleViewOrderHistory(selectedUser)}>
-          View Order History
+          <Block sx={{ mr: 1, fontSize: 18 }} /> {selectedUser?.isBlocked ? 'Unblock' : 'Block'} User
         </MenuItem>
       </Menu>
 
-      <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)}>
-        <DialogTitle>Reset Password for {selectedUser?.name}</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            This will set a new password for the user. Make sure to communicate the new password securely.
-          </Alert>
+      {/* Reset Password Dialog */}
+      <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ background: PRIMARY_GRADIENT, color: 'white', fontWeight: 700 }}>
+          Reset Password
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
           <TextField
-            fullWidth
             label="New Password"
             type="password"
+            fullWidth
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="Enter new password (min 6 characters)"
-            autoFocus
           />
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setPasswordDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleResetPassword}>
-            Reset Password
+          <Button variant="contained" sx={{ background: PRIMARY_GRADIENT }} onClick={handleResetPassword}>
+            Reset
           </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={orderHistoryDialogOpen}
-        onClose={() => setOrderHistoryDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Order History for {selectedUser?.name}</DialogTitle>
-        <DialogContent>
-          {userOrders.length > 0 ? (
-            userOrders.map((order) => (
-              <Box
-                key={order._id}
-                sx={{
-                  p: 2,
-                  mb: 2,
-                  border: '1px solid #ddd',
-                  borderRadius: 1,
-                }}
-              >
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="body2" fontWeight={600}>
-                    Order #{order._id.slice(-8)}
-                  </Typography>
-                  <Chip label={order.status} size="small" />
-                </Box>
-                <Typography variant="caption" color="text.secondary">
-                  {formatDate(order.createdAt)}
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  <strong>Total:</strong> ${order.totalPrice.toFixed(2)}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Items:</strong> {order.orderItems.length}
-                </Typography>
-              </Box>
-            ))
-          ) : (
-            <Typography color="text.secondary">No orders found</Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOrderHistoryDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Container>

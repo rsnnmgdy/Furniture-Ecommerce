@@ -4,7 +4,8 @@ import {
   Typography,
   Button,
   Box,
-  Paper,
+  Card,
+  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -20,17 +21,22 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Grid,
   MenuItem,
   FormControl,
   InputLabel,
   Select,
+  Paper,
+  Divider,
+  Grid,
+  Tooltip,
 } from '@mui/material';
 import {
   Add,
   Edit,
   Delete,
-  Image as ImageIcon,
+  Search,
+  CloudUpload,
+  Close,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -39,16 +45,8 @@ import productService from '../../services/productService';
 import { formatCurrency } from '../../utils/helpers';
 import Loading from '../../components/common/Loading';
 
-const categories = [
-  'Living Room',
-  'Bedroom',
-  'Dining Room',
-  'Office',
-  'Outdoor',
-  'Storage',
-  'Decor',
-  'Kitchen',
-];
+const categories = ['Living Room', 'Bedroom', 'Dining Room', 'Office', 'Outdoor', 'Storage', 'Decor', 'Kitchen'];
+const PRIMARY_GRADIENT = 'linear-gradient(135deg, #C67C4E 0%, #8B6F47 100%)';
 
 const productSchema = Yup.object({
   name: Yup.string().min(3).max(100).required('Name is required'),
@@ -67,7 +65,13 @@ const Products = () => {
   const [selected, setSelected] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [imageFiles, setImageFiles] = useState([]);
+  
+  // --- STATE FOR IMAGES ---
+  const [imageFiles, setImageFiles] = useState([]); // New files to upload
+  const [imagesToDelete, setImagesToDelete] = useState([]); // publicIds to delete
+  const [existingImages, setExistingImages] = useState([]); // For UI display
+  
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -110,9 +114,19 @@ const Products = () => {
           }
         });
 
-        imageFiles.forEach((file) => {
+        // 1. Add new image files
+        console.log('🖼️ ImageFiles to upload:', imageFiles.length);
+        imageFiles.forEach((file, index) => {
+          console.log(`  [${index}] ${file.name} (${file.size} bytes, ${file.type})`);
           formData.append('images', file);
         });
+
+        // 2. Add list of image publicIds to delete
+        if (imagesToDelete.length > 0) {
+          formData.append('imagesToDelete', JSON.stringify(imagesToDelete));
+        }
+
+        console.log('📤 FormData entries:', Array.from(formData.entries()).map(([k, v]) => `${k}: ${v instanceof File ? v.name : typeof v}`));
 
         if (editingProduct) {
           await productService.updateProduct(editingProduct._id, formData);
@@ -123,9 +137,6 @@ const Products = () => {
         }
 
         setDialogOpen(false);
-        setEditingProduct(null);
-        setImageFiles([]);
-        resetForm();
         fetchProducts();
       } catch (error) {
         toast.error(error.message || 'Failed to save product');
@@ -133,7 +144,17 @@ const Products = () => {
     },
   });
 
-  const handleEdit = (product) => {
+  // --- Resets all states when dialog opens ---
+  const openAddDialog = () => {
+    setEditingProduct(null);
+    formik.resetForm();
+    setImageFiles([]);
+    setExistingImages([]);
+    setImagesToDelete([]);
+    setDialogOpen(true);
+  };
+  
+  const openEditDialog = (product) => {
     setEditingProduct(product);
     formik.setValues({
       name: product.name,
@@ -145,12 +166,33 @@ const Products = () => {
       stock: product.stock,
       color: product.color?.join(', ') || '',
     });
+    setImageFiles([]);
+    setExistingImages(product.images || []); // Set existing images for preview
+    setImagesToDelete([]);
     setDialogOpen(true);
   };
 
+  // --- Handlers for image add/remove ---
+  const handleNewImageUpload = (e) => {
+    const newFiles = Array.from(e.target.files);
+    setImageFiles([...imageFiles, ...newFiles]);
+    e.target.value = ''; // Reset input
+  };
+
+  const handleRemoveNewImage = (index) => {
+    setImageFiles(imageFiles.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveExistingImage = (image) => {
+    // Add publicId to delete list
+    setImagesToDelete([...imagesToDelete, image.publicId]);
+    // Remove from UI preview
+    setExistingImages(existingImages.filter(img => img._id !== image._id));
+  };
+
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
-
     try {
       await productService.deleteProduct(id);
       toast.success('Product deleted');
@@ -160,13 +202,8 @@ const Products = () => {
     }
   };
 
-  // Bulk Delete (MP1 - 20pts requirement)
   const handleBulkDelete = async () => {
-    if (selected.length === 0) {
-      toast.warning('Please select products to delete');
-      return;
-    }
-
+    if (selected.length === 0) return;
     if (!window.confirm(`Delete ${selected.length} products?`)) return;
 
     try {
@@ -179,281 +216,323 @@ const Products = () => {
     }
   };
 
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      const newSelected = products.map((p) => p._id);
-      setSelected(newSelected);
-    } else {
-      setSelected([]);
-    }
-  };
-
-  const handleSelectOne = (id) => {
-    const selectedIndex = selected.indexOf(id);
-    let newSelected = [];
-
-    if (selectedIndex === -1) {
-      newSelected = [...selected, id];
-    } else {
-      newSelected = selected.filter((item) => item !== id);
-    }
-
-    setSelected(newSelected);
-  };
-
-  const isSelected = (id) => selected.indexOf(id) !== -1;
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) return <Loading />;
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight={600}>
-          Products Management
-        </Typography>
-        <Box display="flex" gap={2}>
-          {selected.length > 0 && (
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<Delete />}
-              onClick={handleBulkDelete}
-            >
-              Delete Selected ({selected.length})
-            </Button>
-          )}
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => {
-              setEditingProduct(null);
-              formik.resetForm();
-              setImageFiles([]);
-              setDialogOpen(true);
-            }}
+    <Container maxWidth="xl" sx={{ py: 4, backgroundColor: '#FAFAFA', minHeight: '100vh' }}>
+      {/* Header */}
+      <Box mb={4} display="flex" justifyContent="space-between" alignItems="flex-start">
+        <Box>
+          <Typography
+            variant="h3"
+            fontWeight={700}
+            sx={{ background: PRIMARY_GRADIENT, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
           >
-            Add Product
-          </Button>
+            Products
+          </Typography>
+          <Typography variant="body1" color="textSecondary" sx={{ mt: 1 }}>
+            Manage your furniture inventory
+          </Typography>
         </Box>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          sx={{
+            background: PRIMARY_GRADIENT,
+            color: 'white',
+            fontWeight: 600,
+            textTransform: 'none',
+            borderRadius: '8px',
+            px: 3,
+          }}
+          onClick={openAddDialog} // Use new handler
+        >
+          Add Product
+        </Button>
       </Box>
 
-      {/* Products DataTable (MP1 requirement) */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  checked={selected.length === products.length}
-                  onChange={handleSelectAll}
-                />
-              </TableCell>
-              <TableCell>Image</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Price</TableCell>
-              <TableCell>Stock</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {products
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((product) => {
-                const isItemSelected = isSelected(product._id);
+      {/* Toolbar */}
+      <Card sx={{ mb: 3, borderRadius: '12px', border: '1px solid #E8E8E8', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+        <CardContent sx={{ p: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <TextField
+            placeholder="Search products..."
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ flex: 1, minWidth: 250, '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: '#FAFAFA' } }}
+            InputProps={{ startAdornment: <Search sx={{ mr: 1, color: '#999' }} /> }}
+          />
+          {selected.length > 0 && (
+            <>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                {selected.length} selected
+              </Typography>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<Delete />}
+                onClick={handleBulkDelete}
+                sx={{ borderRadius: '8px' }}
+              >
+                Delete
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
-                return (
-                  <TableRow key={product._id} selected={isItemSelected}>
+      {/* Products Table */}
+      <Card sx={{ borderRadius: '12px', border: '1px solid #E8E8E8', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#FAFAFA' }}>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={selected.length === filteredProducts.length && filteredProducts.length > 0}
+                    onChange={() => {
+                      if (selected.length === filteredProducts.length) {
+                        setSelected([]);
+                      } else {
+                        setSelected(filteredProducts.map(p => p._id));
+                      }
+                    }}
+                  />
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Image</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Price</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Stock</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#666' }} align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredProducts
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((product) => (
+                  <TableRow
+                    key={product._id}
+                    sx={{ '&:hover': { backgroundColor: '#FAFAFA' }, backgroundColor: selected.includes(product._id) ? '#F0F0F0' : 'inherit' }}
+                    selected={selected.includes(product._id)}
+                  >
                     <TableCell padding="checkbox">
                       <Checkbox
-                        checked={isItemSelected}
-                        onChange={() => handleSelectOne(product._id)}
+                        checked={selected.includes(product._id)}
+                        onChange={() => {
+                          if (selected.includes(product._id)) {
+                            setSelected(selected.filter(id => id !== product._id));
+                          } else {
+                            setSelected([...selected, product._id]);
+                          }
+                        }}
                       />
                     </TableCell>
                     <TableCell>
-                      <img
+                      <Box
+                        component="img"
                         src={product.images[0]?.url || '/placeholder.jpg'}
                         alt={product.name}
-                        style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }}
+                        sx={{ width: 50, height: 50, objectFit: 'cover', borderRadius: '8px', border: '1px solid #E8E8E8' }}
                       />
                     </TableCell>
-                    <TableCell>{product.name}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#2C2C2C' }}>{product.name}</TableCell>
                     <TableCell>
-                      <Chip label={product.category} size="small" />
+                      <Chip
+                        label={product.category}
+                        size="small"
+                        sx={{ background: 'linear-gradient(135deg, #C67C4E20, #C67C4E10)', color: '#C67C4E', fontWeight: 600 }}
+                      />
                     </TableCell>
-                    <TableCell>{formatCurrency(product.price)}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#C67C4E' }}>{formatCurrency(product.price)}</TableCell>
                     <TableCell>
                       <Chip
                         label={product.stock}
                         size="small"
-                        color={product.stock < 10 ? 'error' : 'success'}
+                        sx={{
+                          background: product.stock < 10 ? 'linear-gradient(135deg, #FF6B6B20, #FF6B6B10)' : 'linear-gradient(135deg, #4CAF5020, #4CAF5010)',
+                          color: product.stock < 10 ? '#FF6B6B' : '#4CAF50',
+                          fontWeight: 600,
+                        }}
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
                         label={product.isActive ? 'Active' : 'Inactive'}
                         size="small"
-                        color={product.isActive ? 'success' : 'default'}
+                        sx={{
+                          background: product.isActive ? 'linear-gradient(135deg, #4CAF5020, #4CAF5010)' : 'linear-gradient(135deg, #99999920, #99999910)',
+                          color: product.isActive ? '#4CAF50' : '#999',
+                          fontWeight: 600,
+                        }}
                       />
                     </TableCell>
-                    <TableCell>
-                      <IconButton size="small" onClick={() => handleEdit(product)}>
+                    <TableCell align="center">
+                      <IconButton size="small" onClick={() => openEditDialog(product)} sx={{ color: '#C67C4E', '&:hover': { backgroundColor: '#C67C4E20' } }}>
                         <Edit fontSize="small" />
                       </IconButton>
                       <IconButton
                         size="small"
-                        color="error"
                         onClick={() => handleDelete(product._id)}
+                        sx={{ color: '#FF6B6B', '&:hover': { backgroundColor: '#FF6B6B20' } }}
                       >
                         <Delete fontSize="small" />
                       </IconButton>
                     </TableCell>
                   </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
+                ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
         <TablePagination
+          rowsPerPageOptions={[10, 25, 50]}
           component="div"
-          count={products.length}
+          count={filteredProducts.length}
+          rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={(e, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
+          onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value))}
+          sx={{ borderTop: '1px solid #EFEFEF', backgroundColor: '#FAFAFA' }}
         />
-      </TableContainer>
+      </Card>
 
-      {/* Add/Edit Product Dialog */}
+      {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <form onSubmit={formik.handleSubmit}>
-          <DialogTitle>
+          <DialogTitle sx={{ background: PRIMARY_GRADIENT, color: 'white', fontWeight: 700 }}>
             {editingProduct ? 'Edit Product' : 'Add New Product'}
           </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Product Name"
-                  name="name"
-                  value={formik.values.name}
-                  onChange={formik.handleChange}
-                  error={formik.touched.name && Boolean(formik.errors.name)}
-                  helperText={formik.touched.name && formik.errors.name}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Description"
-                  name="description"
-                  value={formik.values.description}
-                  onChange={formik.handleChange}
-                  error={formik.touched.description && Boolean(formik.errors.description)}
-                  helperText={formik.touched.description && formik.errors.description}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Price"
-                  name="price"
-                  value={formik.values.price}
-                  onChange={formik.handleChange}
-                  error={formik.touched.price && Boolean(formik.errors.price)}
-                  helperText={formik.touched.price && formik.errors.price}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Sale Price (Optional)"
-                  name="salePrice"
-                  value={formik.values.salePrice}
-                  onChange={formik.handleChange}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    name="category"
-                    value={formik.values.category}
-                    label="Category"
-                    onChange={formik.handleChange}
-                    error={formik.touched.category && Boolean(formik.errors.category)}
-                  >
-                    {categories.map((cat) => (
-                      <MenuItem key={cat} value={cat}>
-                        {cat}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Material"
-                  name="material"
-                  value={formik.values.material}
-                  onChange={formik.handleChange}
-                  error={formik.touched.material && Boolean(formik.errors.material)}
-                  helperText={formik.touched.material && formik.errors.material}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="Stock"
-                  name="stock"
-                  value={formik.values.stock}
-                  onChange={formik.handleChange}
-                  error={formik.touched.stock && Boolean(formik.errors.stock)}
-                  helperText={formik.touched.stock && formik.errors.stock}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Colors (comma separated)"
-                  name="color"
-                  value={formik.values.color}
-                  onChange={formik.handleChange}
-                  placeholder="Brown, Black, White"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Button variant="outlined" component="label" startIcon={<ImageIcon />}>
-                  Upload Images
-                  <input
-                    type="file"
-                    hidden
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => setImageFiles(Array.from(e.target.files))}
-                  />
-                </Button>
-                {imageFiles.length > 0 && (
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    {imageFiles.length} file(s) selected
-                  </Typography>
-                )}
-              </Grid>
-            </Grid>
+          <DialogContent sx={{ mt: 2 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              {/* Product Details */}
+              <TextField label="Product Name" fullWidth {...formik.getFieldProps('name')} error={formik.touched.name && !!formik.errors.name} helperText={formik.touched.name && formik.errors.name} />
+              <FormControl fullWidth error={formik.touched.category && !!formik.errors.category}>
+                <InputLabel>Category</InputLabel>
+                <Select {...formik.getFieldProps('category')} label="Category">
+                  {categories.map(cat => <MenuItem key={cat} value={cat}>{cat}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <TextField label="Price" type="number" fullWidth {...formik.getFieldProps('price')} error={formik.touched.price && !!formik.errors.price} />
+              <TextField label="Sale Price" type="number" fullWidth {...formik.getFieldProps('salePrice')} />
+              <TextField label="Material" fullWidth {...formik.getFieldProps('material')} error={formik.touched.material && !!formik.errors.material} />
+              <TextField label="Stock" type="number" fullWidth {...formik.getFieldProps('stock')} error={formik.touched.stock && !!formik.errors.stock} />
+              <TextField label="Colors (comma-separated)" fullWidth {...formik.getFieldProps('color')} sx={{ gridColumn: '1 / -1' }} />
+              <TextField
+                label="Description"
+                fullWidth
+                multiline
+                rows={3}
+                {...formik.getFieldProps('description')}
+                error={formik.touched.description && !!formik.errors.description}
+                helperText={formik.touched.description && formik.errors.description}
+                sx={{ gridColumn: '1 / -1' }}
+              />
+            </Box>
+
+            {/* Image Upload Section */}
+            <Divider sx={{ my: 3 }} />
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+              Product Images
+            </Typography>
+
+            {/* Existing Images */}
+            {editingProduct && existingImages.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>
+                  Current Images ({existingImages.length})
+                </Typography>
+                <Grid container spacing={1}>
+                  {existingImages.map((image) => (
+                    <Grid item xs={6} sm={4} md={3} key={image._id}>
+                      <Box sx={{ position: 'relative', width: '100%', paddingBottom: '100%', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px solid #E8E8E8', overflow: 'hidden' }}>
+                        <Box component="img" src={image.url} alt="product" sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        <Tooltip title="Remove image">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRemoveExistingImage(image)}
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              backgroundColor: 'rgba(255,107,107,0.9)',
+                              color: 'white',
+                              '&:hover': { backgroundColor: 'rgba(255,107,107,1)' },
+                              zIndex: 10,
+                            }}
+                          >
+                            <Close fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            )}
+
+            {/* New Images Upload */}
+            <Paper sx={{ p: 2, textAlign: 'center', border: '2px dashed #C67C4E', borderRadius: '8px', backgroundColor: '#FAFAFA', cursor: 'pointer', transition: 'all 0.3s', '&:hover': { borderColor: '#8B6F47', backgroundColor: '#F5F5F5' } }} component="label">
+              <input
+                key={`file-input-${imageFiles.length}`}
+                hidden
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleNewImageUpload}
+              />
+              <CloudUpload sx={{ fontSize: 40, color: '#C67C4E', mb: 1 }} />
+              <Typography variant="body2" fontWeight={600} sx={{ color: '#C67C4E' }}>
+                Click to upload or drag and drop
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#999', display: 'block', mt: 0.5 }}>
+                PNG, JPG, WebP up to 5MB (Max 10 images total)
+              </Typography>
+            </Paper>
+
+            {/* New Images Preview */}
+            {imageFiles.length > 0 && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>
+                  New Images to Upload ({imageFiles.length})
+                </Typography>
+                <Grid container spacing={1}>
+                  {imageFiles.map((file, index) => (
+                    <Grid item xs={6} sm={4} md={3} key={`${file.name}-${index}`}>
+                      <Box sx={{ position: 'relative', width: '100%', paddingBottom: '100%', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '2px solid #C67C4E', overflow: 'hidden' }}>
+                        <Box component="img" src={URL.createObjectURL(file)} alt={file.name} sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        <Tooltip title="Remove">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRemoveNewImage(index)}
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              backgroundColor: 'rgba(255,107,107,0.9)',
+                              color: 'white',
+                              '&:hover': { backgroundColor: 'rgba(255,107,107,1)' },
+                              zIndex: 10,
+                            }}
+                          >
+                            <Close fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            )}
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">
+            <Button type="submit" variant="contained" sx={{ background: PRIMARY_GRADIENT }}>
               {editingProduct ? 'Update' : 'Create'}
             </Button>
           </DialogActions>

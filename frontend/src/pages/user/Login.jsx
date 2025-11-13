@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -9,41 +9,34 @@ import {
   Button,
   Alert,
   Divider,
-  InputAdornment,
-  IconButton,
-  Stack, // <-- IMPORTED
-  CircularProgress,
+  InputAdornment, // Added
+  IconButton,     // Added
+  Stack,          // Added
+  CircularProgress, // Added
 } from '@mui/material';
-import { Google, Facebook, Visibility, VisibilityOff } from '@mui/icons-material';
+import { Google, Facebook, Visibility, VisibilityOff } from '@mui/icons-material'; // Added
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
+import { signInWithGoogle, signInWithFacebook } from '../../config/firebase'; // Your Firebase config file
 
-// --- VALIDATION SCHEMA (Using email, not username) ---
 const validationSchema = Yup.object({
-  email: Yup.string().email('Invalid email').required('Email is required'),
+  username: Yup.string().required('Username is required'),
   password: Yup.string().required('Password is required'),
 });
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, signInWithGoogle, signInWithFacebook, user } = useAuth();
+  // --- 1. Get the CORRECT functions from your AuthContext ---
+  const { login, firebaseLogin } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // This watches for the user state to change, THEN navigates
-  useEffect(() => {
-    if (user) {
-      toast.success('Welcome! Login successful!');
-      navigate('/');
-    }
-  }, [user, navigate]);
-
   const formik = useFormik({
     initialValues: {
-      email: '', // Use email
+      username: '',
       password: '',
     },
     validationSchema,
@@ -51,24 +44,33 @@ const Login = () => {
       try {
         setLoading(true);
         setError('');
-        await login(values.email, values.password);
-        // We don't toast or navigate here. The useEffect does.
+        // --- 2. Call your original JWT login function ---
+        await login(values); 
+        toast.success('Login successful!');
+        navigate('/');
       } catch (err) {
-        setError(err.response?.data?.message || 'Invalid email or password');
-        setLoading(false); // Only set loading false on error
+        setError(err.message || 'Invalid credentials');
+      } finally {
+        setLoading(false);
       }
     },
   });
 
+  // --- 3. Add Google/FB Handlers ---
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       setError('');
-      await signInWithGoogle();
-      // The useEffect will handle the success.
+      // 1. Sign in with Firebase popup
+      const { token } = await signInWithGoogle();
+      // 2. Send Firebase token to your backend /firebase-login route
+      await firebaseLogin(token); 
+      toast.success('Welcome! Login successful!');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Google login failed');
       toast.error('Google login failed. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -77,15 +79,21 @@ const Login = () => {
     try {
       setLoading(true);
       setError('');
-      await signInWithFacebook();
+      const { token } = await signInWithFacebook();
+      await firebaseLogin(token);
+      toast.success('Welcome! Login successful!');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Facebook login failed');
       toast.error('Facebook login failed. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
 
+
   return (
+    // --- 4. Added new design from previous step ---
     <Box sx={{ bgcolor: '#f7f4f1', minHeight: 'calc(100vh - 70px)', py: 8 }}>
       <Container maxWidth="xs">
         <Paper 
@@ -114,7 +122,7 @@ const Login = () => {
             </Alert>
           )}
 
-          {/* === THIS IS THE JSX FIX === */}
+          {/* --- 5. Added Social Login Buttons --- */}
           <Stack spacing={1.5} sx={{ mb: 3 }}>
             <Button
               fullWidth
@@ -142,7 +150,6 @@ const Login = () => {
               Continue with Facebook
             </Button>
           </Stack>
-          {/* === END OF FIX === */}
 
           <Divider sx={{ my: 3 }}>
             <Typography variant="body2" color="text.secondary">
@@ -153,13 +160,12 @@ const Login = () => {
           <Box component="form" onSubmit={formik.handleSubmit}>
             <TextField
               fullWidth
-              label="Email Address"
-              name="email"
-              type="email"
-              value={formik.values.email}
+              label="Username"
+              name="username"
+              value={formik.values.username}
               onChange={formik.handleChange}
-              error={formik.touched.email && Boolean(formik.errors.email)}
-              helperText={formik.touched.email && formik.errors.email}
+              error={formik.touched.username && Boolean(formik.errors.username)}
+              helperText={formik.touched.username && formik.errors.username}
               sx={{ mb: 2 }}
             />
 

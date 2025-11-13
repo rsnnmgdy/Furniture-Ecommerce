@@ -1,12 +1,14 @@
 const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
-const admin = require('firebase-admin');
+const admin = require('firebase-admin'); // Import firebase-admin
 const connectDB = require('./config/db');
-// const { initializeFirebase } = require('./config/firebase'); // <-- 1. DELETE THIS LINE
+// const { initializeFirebase } = require('./config/firebase'); // <-- 1. DELETED THIS LINE
 const errorHandler = require('./middleware/errorHandler');
 
 dotenv.config();
+
+// === 2. INITIALIZE FIREBASE ADMIN *ONCE* ===
 try {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -18,25 +20,38 @@ try {
   });
   console.log('Firebase Admin SDK initialized successfully.');
 } catch (error) {
-  console.error('CRITICAL: Error initializing Firebase Admin SDK:', error);
+  // Check if it's already initialized (for nodemon restarts)
+  if (error.code !== 'app/duplicate-app') {
+    console.error('CRITICAL: Error initializing Firebase Admin SDK:', error);
+  }
 }
+// ==========================================
+
 // Initialize Express app
 const app = express();
 
 // Connect to MongoDB
 connectDB();
 
-// initializeFirebase(); // <-- 2. DELETE THIS LINE
+// initializeFirebase(); // <-- 3. DELETED THIS LINE
 
 // Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
 }));
-app.use(express.json());
+
+// Custom middleware to skip JSON parsing for multipart requests
+app.use((req, res, next) => {
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
+    return next();
+  }
+  express.json()(req, res, next);
+});
+
 app.use(express.urlencoded({ extended: true }));
 
-// Routes (Your routes are correct)
+// Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));

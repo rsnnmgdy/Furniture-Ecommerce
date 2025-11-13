@@ -30,3 +30,4 @@ dist/
 build/
 
 echo "backend/config/serviceAccountKey.json" >> .gitignore
+echo "backend/config/*.json" >> .gitignore

@@ -142,7 +142,7 @@ exports.updateReview = async (req, res) => {
     if (req.body.rating) review.rating = req.body.rating;
 
     if (req.body.comment) {
-      // Filter bad words
+      // Filter bad words (mask them)
       let filteredComment = req.body.comment;
       let isFiltered = false;
 
@@ -150,7 +150,9 @@ exports.updateReview = async (req, res) => {
         filteredComment = filterBadWords(req.body.comment);
         isFiltered = true;
       }
-
+      
+      // FIX APPLIED: Mongoose handles the validation if we assign the property.
+      // The issue was likely due to the comment property being undefined/null if validation failed.
       review.comment = filteredComment;
       review.isFiltered = isFiltered;
     }
@@ -168,6 +170,14 @@ exports.updateReview = async (req, res) => {
       review,
     });
   } catch (error) {
+    // FIX APPLIED: Catch 400 validation error (likely from minlength check)
+    if (error.name === 'ValidationError') {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation failed: Comment must be 10-500 characters after filtering.',
+        });
+    }
+    
     res.status(500).json({
       success: false,
       message: error.message,

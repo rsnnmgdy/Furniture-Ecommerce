@@ -66,6 +66,7 @@ const ProductDetails = () => {
   // State for review form
   const [editingReview, setEditingReview] = useState(null);
   const [canReview, setCanReview] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false); // NEW STATE: Controls visibility
   const [reviewLoading, setReviewLoading] = useState(true);
   const [reviewError, setReviewError] = useState('');
 
@@ -128,11 +129,13 @@ const ProductDetails = () => {
       if (data.canReview) {
         setCanReview(true);
         setEditingReview(null);
+        setShowReviewForm(false); // Initially hide the form
       } else {
         setCanReview(false);
         if (data.review) {
-          // User already reviewed, but can edit
+          // User already reviewed, enable editing capability but hide the form
           setEditingReview(data.review);
+          setShowReviewForm(false); // HIDE FORM BY DEFAULT
           setReviewError('You have already reviewed this product.');
         } else if (data.message) {
           // User has not purchased
@@ -185,22 +188,24 @@ const ProductDetails = () => {
       }
       setEditingReview(null);
       setCanReview(false);
+      setShowReviewForm(false); // HIDE FORM after submission
       fetchReviews();
       fetchProduct();
     } catch (error) {
-      toast.error(error.message || 'Failed to submit review');
+      // FIX: Catch 400 validation errors from backend service
+      toast.error(error.message || error.data?.message || 'Failed to submit review');
     }
   };
 
   const handleEditClick = (review) => {
     setEditingReview(review);
-    setCanReview(true); // Show the form
+    setShowReviewForm(true); // SHOW FORM when Edit is clicked
     document.getElementById('review-form')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
     setEditingReview(null);
-    setCanReview(false); // Hide form
+    setShowReviewForm(false); // HIDE FORM when Cancel is clicked
     setReviewError('You have already reviewed this product.');
   };
 
@@ -498,29 +503,37 @@ const ProductDetails = () => {
           </Grid>
         </Paper>
 
-        {!reviewLoading && (
-          <Box mb={4} id="review-form">
-            {canReview || editingReview ? (
-              <ReviewForm
-                onSubmit={handleReviewSubmit}
-                editingReview={editingReview}
-                onCancelEdit={handleCancelEdit}
-                initialRating={editingReview ? editingReview.rating : 5}
-                initialText={editingReview ? editingReview.comment : ''}
-              />
+        <Box mb={4} id="review-form">
+          {/* FIX: Form visibility controlled by showReviewForm state */}
+          {showReviewForm ? (
+            <ReviewForm
+              onSubmit={handleReviewSubmit}
+              editingReview={editingReview}
+              onCancelEdit={handleCancelEdit}
+              initialRating={editingReview ? editingReview.rating : 5}
+              initialText={editingReview ? editingReview.comment : ''}
+            />
+          ) : (
+            !isAuthenticated() ? (
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
+                Please <Link to="/login" style={{ fontWeight: 'bold' }}>Login</Link> to write a review.
+              </Alert>
             ) : (
-              !isAuthenticated() ? (
-                <Alert severity="info" sx={{ borderRadius: 2 }}>
-                  Please <Link to="/login" style={{ fontWeight: 'bold' }}>Login</Link> to write a review.
-                </Alert>
-              ) : (
-                reviewError && (
-                  <Alert severity="info" sx={{ borderRadius: 2 }}>{reviewError}</Alert>
-                )
+              // FIX: Show 'Write a Review' or 'Edit Your Review' button only if user is authorized (canReview or has editingReview data)
+              (canReview || editingReview) && (
+                <Stack direction="row" justifyContent="center" mb={2}>
+                    <Button 
+                        variant="contained" 
+                        onClick={() => setShowReviewForm(true)}
+                        startIcon={editingReview ? <EditOutlined /> : null}
+                    >
+                        {editingReview ? "Edit Your Review" : "Write a Review"}
+                    </Button>
+                </Stack>
               )
-            )}
-          </Box>
-        )}
+            )
+          )}
+        </Box>
 
         <ReviewList
           reviews={reviews}

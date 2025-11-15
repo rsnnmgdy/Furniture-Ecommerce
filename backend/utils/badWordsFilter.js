@@ -17,6 +17,7 @@ filter.addWords(...customBadWords);
 exports.filterBadWords = (text) => {
   if (!text) return text;
   try {
+    // FIX: Using filter.clean() replaces bad words with ***
     return filter.clean(text);
   } catch (error) {
     console.error('Bad words filter error:', error);
@@ -35,10 +36,11 @@ exports.hasBadWords = (text) => {
   }
 };
 
-// Get filtered version with asterisks
+// Get filtered version with asterisks (Same as filterBadWords now)
 exports.maskBadWords = (text) => {
   if (!text) return text;
   try {
+    // FIX: Using filter.clean() which masks the words
     return filter.clean(text);
   } catch (error) {
     console.error('Bad words mask error:', error);

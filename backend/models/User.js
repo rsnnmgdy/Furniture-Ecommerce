@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto'); // NEW IMPORT
 
 const userSchema = new mongoose.Schema(
   {
@@ -63,9 +64,9 @@ const userSchema = new mongoose.Schema(
     },
     isVerified: {
       type: Boolean,
-      default: false,
+      default: false, // User is unverified by default
     },
-    verificationToken: String,
+    verificationToken: String, // Field to store hashed verification token
     resetPasswordToken: String,
     resetPasswordExpire: Date,
   },
@@ -98,6 +99,21 @@ userSchema.methods.generateToken = function () {
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE }
   );
+};
+
+// NEW METHOD: Generate and hash email verification token
+userSchema.methods.getVerificationToken = function () {
+    // Generate token
+    const verificationToken = crypto.randomBytes(20).toString('hex');
+
+    // Hash token and set to verificationToken field
+    this.verificationToken = crypto
+        .createHash('sha256')
+        .update(verificationToken)
+        .digest('hex');
+
+    // Return the unhashed token for the email link
+    return verificationToken;
 };
 
 module.exports = mongoose.model('User', userSchema);

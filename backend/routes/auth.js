@@ -7,6 +7,7 @@ const {
   firebaseLogin,
   getProfile,
   updateProfile,
+  verifyEmail, // This was added in the previous fix
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { uploadUserPhoto } = require('../middleware/upload');
@@ -19,8 +20,11 @@ const {
 
 // Public routes
 router.post('/register', registerValidation, validate, register);
-router.post('/login', loginValidation, validate, login); // <-- This is the route you need
-router.post('/firebase-login', firebaseLogin); // <-- This is for Google/FB
+router.post('/login', loginValidation, validate, login); 
+router.post('/firebase-login', firebaseLogin); 
+
+// NEW: Email Verification route
+router.get('/verify/:token', authController.verifyEmail);
 
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password/:token', authController.resetPassword);

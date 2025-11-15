@@ -2,25 +2,27 @@ import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
+    // New Primary: Dark Wood/Espresso (for buttons, links, accents)
     primary: {
-      main: '#8B4513', // Saddle Brown
-      light: '#A0522D',
-      dark: '#654321',
+      main: '#6B5344', // Dark Espresso Brown
+      light: '#A0825D', // Warm Beige Accent
+      dark: '#403228',
       contrastText: '#fff',
     },
+    // New Secondary: Black/Dark Grey (for backgrounds and text contrast)
     secondary: {
-      main: '#2F4F4F', // Dark Slate Gray
-      light: '#708090',
-      dark: '#1C1C1C',
+      main: '#1C1C1C', // Deep Black/Dark Grey
+      light: '#333333',
+      dark: '#000000',
       contrastText: '#fff',
     },
     background: {
-      default: '#FAFAFA',
-      paper: '#FFFFFF',
+      default: '#FAFAFA', // Light Beige/Off-White for main background
+      paper: '#FFFFFF', // Pure White for cards/containers
     },
     text: {
-      primary: '#333333',
-      secondary: '#666666',
+      primary: '#1C1C1C', // Dark text
+      secondary: '#666666', // Grey text
     },
   },
   typography: {
@@ -41,7 +43,11 @@ const theme = createTheme({
           borderRadius: 8,
           padding: '10px 24px',
           fontSize: '1rem',
-        },
+          // Use the new primary color for contained buttons
+          '&.MuiButton-contained': {
+              backgroundColor: '#6B5344',
+          },
+      },
       },
     },
     MuiCard: {

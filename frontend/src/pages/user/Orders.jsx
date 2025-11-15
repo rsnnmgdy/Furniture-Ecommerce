@@ -16,11 +16,15 @@ import orderService from '../../services/orderService';
 import { formatCurrency, formatDate, getOrderStatusColor } from '../../utils/helpers';
 import Loading from '../../components/common/Loading';
 import { toast } from 'react-toastify';
+// NOTE: Assuming OrderDetailDialog is created/available in your components/user folder
+import OrderDetailDialog from '../../components/user/OrderDetailDialog'; 
 
 const Orders = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState(null); 
+  const [isDialogOpen, setIsDialogOpen] = useState(false); 
 
   useEffect(() => {
     fetchOrders();
@@ -36,6 +40,17 @@ const Orders = () => {
       setLoading(false);
     }
   };
+  
+  // FIX APPLIED: Set the order and open the dialog
+  const handleViewDetails = (order) => {
+    setSelectedOrder(order);
+    setIsDialogOpen(true);
+  };
+  
+  const handleCloseDialog = () => {
+      setIsDialogOpen(false);
+      setSelectedOrder(null);
+  }
 
   if (loading) return <Loading />;
 
@@ -127,6 +142,7 @@ const Orders = () => {
                     size="small"
                     fullWidth
                     sx={{ mb: 1 }}
+                    onClick={() => handleViewDetails(order)} // TRIGGER DIALOG
                   >
                     View Details
                   </Button>
@@ -147,6 +163,13 @@ const Orders = () => {
           </CardContent>
         </Card>
       ))}
+      
+      {/* Order Detail Modal */}
+      <OrderDetailDialog 
+        open={isDialogOpen}
+        order={selectedOrder}
+        onClose={handleCloseDialog}
+      />
     </Container>
   );
 };

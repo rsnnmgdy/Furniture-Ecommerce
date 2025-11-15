@@ -3,7 +3,9 @@ import axios from 'axios';
 // Create axios instance
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  // Don't set Content-Type here - let axios and FormData handle it automatically
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Request interceptor - Add token to requests
@@ -21,12 +23,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Only set Content-Type for non-FormData requests
-    // FormData should set its own multipart/form-data header with boundary
-    if (!(config.data instanceof FormData) && !config.headers['Content-Type']) {
-      config.headers['Content-Type'] = 'application/json';
-    }
-    
     return config;
   },
   (error) => {
@@ -38,26 +34,32 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const message = error.response?.data?.message || error.message || 'An error occurred';
     
     // Handle 401 - Unauthorized
-    // BUT: Don't redirect on auth endpoints (they handle 401 themselves)
     if (error.response?.status === 401) {
       const url = error.config?.url || '';
-      const isAuthEndpoint = url.includes('/auth/verify-token') || url.includes('/auth/register');
       
+      // FIX APPLIED: DO NOT REDIRECT/CLEAR TOKENS if the failure happened on these specific Auth routes
+      const isAuthEndpoint = 
+        url.includes('/auth/login') ||
+        url.includes('/auth/register') || 
+        url.includes('/auth/firebase-login'); 
+
       if (!isAuthEndpoint) {
         console.warn('Unauthorized - clearing tokens and redirecting to login');
         localStorage.removeItem('token');
         localStorage.removeItem('firebaseToken');
         localStorage.removeItem('user');
-        window.location.href = '/login';
-      } else {
-        console.warn('Auth endpoint returned 401:', message);
+        window.location.href = '/login'; // Only redirect if trying to access a protected route
       }
     }
     
-    return Promise.reject({ message, status: error.response?.status, data: error.response?.data });
+    // If we're on an auth endpoint, we reject the promise with the specific server error
+    return Promise.reject({ 
+        message: error.response?.data?.message || error.message, 
+        status: error.response?.status, 
+        data: error.response?.data 
+    });
   }
 );
 

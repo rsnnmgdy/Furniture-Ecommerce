@@ -16,7 +16,7 @@ import orderService from '../../services/orderService';
 import { formatCurrency, formatDate, getOrderStatusColor } from '../../utils/helpers';
 import Loading from '../../components/common/Loading';
 import { toast } from 'react-toastify';
-// NOTE: Assuming OrderDetailDialog is created/available in your components/user folder
+// NOTE: Assuming OrderDetailDialog is available in components/user folder
 import OrderDetailDialog from '../../components/user/OrderDetailDialog'; 
 
 const Orders = () => {
@@ -41,7 +41,6 @@ const Orders = () => {
     }
   };
   
-  // FIX APPLIED: Set the order and open the dialog
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
     setIsDialogOpen(true);
@@ -51,6 +50,27 @@ const Orders = () => {
       setIsDialogOpen(false);
       setSelectedOrder(null);
   }
+  
+  // NEW FUNCTION: Handle Order Cancellation
+  const handleCancelOrder = async (orderId) => {
+      if (!window.confirm("Are you sure you want to cancel this order? This action cannot be undone.")) {
+          return;
+      }
+      
+      try {
+          // Call the new service function
+          const response = await orderService.cancelOrder(orderId);
+          toast.success(`Order #${orderId.slice(-8)} has been cancelled.`);
+          
+          // Update the local orders state immediately
+          setOrders(prevOrders => prevOrders.map(order => 
+              order._id === orderId ? response.order : order
+          ));
+          
+      } catch (error) {
+          toast.error(error.message || 'Failed to cancel order. Only Pending/Processing orders can be cancelled.');
+      }
+  };
 
   if (loading) return <Loading />;
 
@@ -142,20 +162,32 @@ const Orders = () => {
                     size="small"
                     fullWidth
                     sx={{ mb: 1 }}
-                    onClick={() => handleViewDetails(order)} // TRIGGER DIALOG
+                    onClick={() => handleViewDetails(order)}
                   >
                     View Details
                   </Button>
 
-                  {['Pending', 'Processing'].includes(order.status) && (
+                  {/* CANCELLATION BUTTON - Only show if status is Pending or Processing */}
+                  {['Pending', 'Processing'].includes(order.status) ? (
                     <Button
                       variant="outlined"
                       color="error"
                       size="small"
                       fullWidth
+                      onClick={() => handleCancelOrder(order._id)} // CALL NEW HANDLER
                     >
                       Cancel Order
                     </Button>
+                  ) : (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        fullWidth
+                        disabled
+                        sx={{ color: 'text.disabled' }}
+                      >
+                        {order.status}
+                      </Button>
                   )}
                 </Box>
               </Grid>

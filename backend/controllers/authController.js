@@ -2,8 +2,8 @@ const User = require('../models/User');
 const admin = require('firebase-admin'); 
 const asyncHandler = require('express-async-handler'); 
 const { processUploadedFiles, deleteImage } = require('../config/cloudinary'); 
-const { sendEmail } = require('../utils/email'); // NEW IMPORT
-const crypto = require('crypto'); // NEW IMPORT
+const { sendEmail } = require('../utils/email'); 
+const crypto = require('crypto'); 
 
 // @desc    Register user (Your original JWT system)
 // @route   POST /api/auth/register
@@ -35,7 +35,6 @@ exports.register = asyncHandler(async (req, res) => {
   await user.save({ validateBeforeSave: false }); 
 
   // Construct verification link
-  // NOTE: req.get('host') is usually localhost:5000 in dev
   const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify/${verificationToken}`;
 
   try {
@@ -77,62 +76,6 @@ exports.register = asyncHandler(async (req, res) => {
   // --- END EMAIL VERIFICATION LOGIC ---
 });
 
-// @desc    Verify email address after user clicks the link
-// @route   GET /api/auth/verify/:token
-// @access  Public
-exports.verifyEmail = asyncHandler(async (req, res) => {
-    const { token } = req.params;
-
-    // Hash the token from the URL to compare with the hash in the database
-    const hashedToken = crypto
-        .createHash('sha256')
-        .update(token)
-        .digest('hex');
-
-    const user = await User.findOne({
-        verificationToken: hashedToken,
-    });
-
-    if (!user) {
-        res.status(400);
-        return res.send('<div style="text-align: center; padding: 50px;"><h1>❌ Verification Failed</h1><p>Invalid or expired verification link.</p></div>');
-    }
-
-    // Set user as verified, clear the token fields
-    user.isVerified = true;
-    user.verificationToken = undefined;
-
-    await user.save();
-
-    // Redirect user to the login page with a success message flag
-    const loginUrl = process.env.CLIENT_URL ? `${process.env.CLIENT_URL}/login?verified=true` : `/login?verified=true`;
-    
-    return res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Verification Success</title>
-            <meta http-equiv="refresh" content="5;url=${loginUrl}">
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; }
-                .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
-                h1 { color: #2E7D32; }
-                p { color: #666; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>✅ Email Verified Successfully!</h1>
-                <p>Your account is now active. You will be redirected to the login page shortly.</p>
-                <p><a href="${loginUrl}">Click here to log in immediately.</a></p>
-            </div>
-        </body>
-        </html>
-    `);
-});
-
-// --- (Original authController functions follow, edited for completeness) ---
-
 // @desc    Login user (Your original JWT system)
 // @route   POST /api/auth/login
 // @access  Public
@@ -143,22 +86,27 @@ exports.login = asyncHandler(async (req, res) => {
   const user = await User.findOne({ username }).select('+password');
 
   if (!user) {
-    res.status(401);
-    throw new Error('Invalid credentials');
+    // FIX APPLIED: Explicitly attach statusCode to the error object
+    const err = new Error('Invalid Username or Password');
+    err.statusCode = 401;
+    throw err;
   }
   
   // NEW CHECK: Prevent login if not verified
   if (!user.isVerified) {
-    res.status(401);
-    throw new Error('Account not verified. Please check your email for the verification link.');
+    const err = new Error('Account not verified. Please check your email for the verification link.');
+    err.statusCode = 401;
+    throw err;
   }
 
   // Check password
   const isPasswordMatch = await user.comparePassword(password);
 
   if (!isPasswordMatch) {
-    res.status(401);
-    throw new Error('Invalid credentials');
+    // FIX APPLIED: Explicitly attach statusCode to the error object
+    const err = new Error('Invalid Username or Password');
+    err.statusCode = 401;
+    throw err;
   }
 
   // Generate token
@@ -259,6 +207,60 @@ exports.firebaseLogin = asyncHandler(async (req, res) => {
       photo: user.photo,
     },
   });
+});
+
+// @desc    Verify email address after user clicks the link
+// @route   GET /api/auth/verify/:token
+// @access  Public
+exports.verifyEmail = asyncHandler(async (req, res) => {
+    const { token } = req.params;
+
+    // Hash the token from the URL to compare with the hash in the database
+    const hashedToken = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+    const user = await User.findOne({
+        verificationToken: hashedToken,
+    });
+
+    if (!user) {
+        res.status(400);
+        return res.send('<div style="text-align: center; padding: 50px;"><h1>❌ Verification Failed</h1><p>Invalid or expired verification link.</p></div>');
+    }
+
+    // Set user as verified, clear the token fields
+    user.isVerified = true;
+    user.verificationToken = undefined;
+
+    await user.save();
+
+    // Redirect user to the login page with a success message flag
+    const loginUrl = process.env.CLIENT_URL ? `${process.env.CLIENT_URL}/login?verified=true` : `/login?verified=true`;
+    
+    return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Verification Success</title>
+            <meta http-equiv="refresh" content="5;url=${loginUrl}">
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; }
+                .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+                h1 { color: #2E7D32; }
+                p { color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>✅ Email Verified Successfully!</h1>
+                <p>Your account is now active. You will be redirected to the login page shortly.</p>
+                <p><a href="${loginUrl}">Click here to log in immediately.</a></p>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
 // @desc    Get current user profile

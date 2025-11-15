@@ -9,18 +9,19 @@ import {
   Button,
   Alert,
   Divider,
-  InputAdornment, // Added
-  IconButton,     // Added
-  Stack,          // Added
-  CircularProgress, // Added
+  InputAdornment, 
+  IconButton,     
+  Stack,          
+  CircularProgress, 
 } from '@mui/material';
-import { Google, Facebook, Visibility, VisibilityOff } from '@mui/icons-material'; // Added
+import { Google, Facebook, Visibility, VisibilityOff } from '@mui/icons-material'; 
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
-import { signInWithGoogle, signInWithFacebook } from '../../config/firebase'; // Your Firebase config file
+import { signInWithGoogle, signInWithFacebook } from '../../config/firebase'; 
 
+// Custom Yup validation for the client-side login form
 const validationSchema = Yup.object({
   username: Yup.string().required('Username is required'),
   password: Yup.string().required('Password is required'),
@@ -28,7 +29,6 @@ const validationSchema = Yup.object({
 
 const Login = () => {
   const navigate = useNavigate();
-  // --- 1. Get the CORRECT functions from your AuthContext ---
   const { login, firebaseLogin } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,32 +44,31 @@ const Login = () => {
       try {
         setLoading(true);
         setError('');
-        // --- 2. Call your original JWT login function ---
         await login(values); 
         toast.success('Login successful!');
         navigate('/');
       } catch (err) {
-        setError(err.message || 'Invalid credentials');
+        // FIX APPLIED: Prioritize the specific message sent by the backend (err.data?.message)
+        const serverMessage = err.data?.message || err.message || 'Login failed. Please check your credentials or network.';
+        setError(serverMessage);
       } finally {
         setLoading(false);
       }
     },
   });
 
-  // --- 3. Add Google/FB Handlers ---
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       setError('');
-      // 1. Sign in with Firebase popup
       const { token } = await signInWithGoogle();
-      // 2. Send Firebase token to your backend /firebase-login route
       await firebaseLogin(token); 
       toast.success('Welcome! Login successful!');
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Google login failed');
-      toast.error('Google login failed. Please try again.');
+      const socialError = err.message || 'Google login failed.';
+      setError(socialError);
+      toast.error(socialError);
     } finally {
       setLoading(false);
     }
@@ -84,8 +83,9 @@ const Login = () => {
       toast.success('Welcome! Login successful!');
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Facebook login failed');
-      toast.error('Facebook login failed. Please try again.');
+      const socialError = err.message || 'Facebook login failed.';
+      setError(socialError);
+      toast.error(socialError);
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,6 @@ const Login = () => {
 
 
   return (
-    // --- 4. Added new design from previous step ---
     <Box sx={{ bgcolor: '#f7f4f1', minHeight: 'calc(100vh - 70px)', py: 8 }}>
       <Container maxWidth="xs">
         <Paper 
@@ -122,7 +121,6 @@ const Login = () => {
             </Alert>
           )}
 
-          {/* --- 5. Added Social Login Buttons --- */}
           <Stack spacing={1.5} sx={{ mb: 3 }}>
             <Button
               fullWidth

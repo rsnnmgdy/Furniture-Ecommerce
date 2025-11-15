@@ -6,6 +6,8 @@ exports.validate = (req, res, next) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({
       success: false,
+      // FIX APPLIED: Use the first error message explicitly as the main message
+      message: errors.array()[0].msg, 
       errors: errors.array().map(err => ({
         field: err.path,
         message: err.msg
@@ -19,13 +21,13 @@ exports.validate = (req, res, next) => {
 exports.registerValidation = [
   body('name')
     .trim()
-    .notEmpty().withMessage('Name is required')
+    .notEmpty().withMessage('Full Name is required') // MODIFIED MESSAGE
     .isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters'),
   
   body('email')
     .trim()
-    .notEmpty().withMessage('Email is required')
-    .isEmail().withMessage('Please provide a valid email')
+    .notEmpty().withMessage('Email address is required') // MODIFIED MESSAGE
+    .isEmail().withMessage('Please provide a valid email address') // MODIFIED MESSAGE
     .normalizeEmail(),
   
   body('username')
@@ -45,10 +47,10 @@ exports.registerValidation = [
 exports.loginValidation = [
   body('username')
     .trim()
-    .notEmpty().withMessage('Username is required'),
+    .notEmpty().withMessage('Username is required for login'), 
   
   body('password')
-    .notEmpty().withMessage('Password is required'),
+    .notEmpty().withMessage('Password is required for login'), 
 ];
 
 // Profile update validation (Unit 1 requirement)
@@ -102,11 +104,9 @@ exports.productValidation = [
 
 // Review validation
 exports.reviewValidation = [
-  // --- ADD THIS ---
   body('productId')
     .notEmpty().withMessage('Product ID is required')
     .isMongoId().withMessage('Invalid Product ID'),
-  // --- END ADD ---
   body('rating')
     .notEmpty().withMessage('Rating is required')
     .isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),

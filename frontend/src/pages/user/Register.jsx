@@ -11,7 +11,7 @@ import {
   Divider,
   InputAdornment,
   IconButton,
-  Stack,
+  Stack, 
   CircularProgress,
 } from '@mui/material';
 import { Google, Facebook, Visibility, VisibilityOff } from '@mui/icons-material';
@@ -19,7 +19,6 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
-// FIX: Import the necessary Firebase functions for social login
 import { signInWithGoogle, signInWithFacebook } from '../../config/firebase'; 
 
 
@@ -33,14 +32,12 @@ const validationSchema = Yup.object({
 
 const Register = () => {
   const navigate = useNavigate();
-  // We need firebaseLogin from context to handle social login tokens
   const { register, firebaseLogin, user } = useAuth(); 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // This useEffect redirects on successful social login
   useEffect(() => {
     if (user) {
       toast.success('Welcome! Registration successful!');
@@ -62,7 +59,6 @@ const Register = () => {
         setLoading(true);
         setError('');
         
-        // FIX APPLIED: Pass a single userData object containing the necessary fields
         const userData = {
             name: values.name,
             email: values.email,
@@ -72,17 +68,18 @@ const Register = () => {
         
         await register(userData);
         
-        toast.success('Registration successful! Please login.');
+        toast.success('Registration successful! Please check your email to verify your account.');
         navigate('/login');
       } catch (err) {
-        setError(err.message || err.response?.data?.message || 'Registration failed');
+        // Display the specific message sent by the backend
+        const serverMessage = err.data?.message || err.message || 'Registration failed. Please check your network.';
+        setError(serverMessage);
       } finally {
         setLoading(false);
       }
     },
   });
 
-  // --- Google Login Handler ---
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
@@ -96,7 +93,6 @@ const Register = () => {
     }
   };
 
-  // --- Facebook Login Handler ---
   const handleFacebookLogin = async () => {
     try {
       setLoading(true);
@@ -139,7 +135,6 @@ const Register = () => {
             </Alert>
           )}
 
-          {/* === Social Login Buttons === */}
           <Stack spacing={1.5} sx={{ mb: 3 }}>
             <Button
               fullWidth
@@ -167,7 +162,6 @@ const Register = () => {
               Sign up with Facebook
             </Button>
           </Stack>
-          {/* === END Social Login Buttons === */}
 
           <Divider sx={{ my: 3 }}>
             <Typography variant="body2" color="text.secondary">
@@ -175,7 +169,7 @@ const Register = () => {
             </Typography>
           </Divider>
 
-          <Box component="form" onSubmit={formik.handleSubmit}>
+          <Box component="form" onSubmit={formik.handleSubmit} noValidate> {/* FIX: ADDED noValidate */}
             <TextField
               fullWidth
               label="Full Name"

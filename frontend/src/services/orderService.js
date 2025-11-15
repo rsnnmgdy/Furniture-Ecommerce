@@ -4,6 +4,8 @@ const orderService = {
   createOrder: async (orderData) => await api.post('/orders', orderData),
   getMyOrders: async () => await api.get('/orders/my-orders'),
   getOrder: async (id) => await api.get(`/orders/${id}`),
+  
+  // ADDED: User can cancel an order
   cancelOrder: async (id) => await api.put(`/orders/${id}/cancel`),
   
   // Admin

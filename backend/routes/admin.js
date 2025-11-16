@@ -9,6 +9,7 @@ const {
   getUserOrders,
   blockUnblockUser,
   resetUserPassword,
+  deleteUser, 
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -23,5 +24,8 @@ router.put('/users/:id/block', blockUnblockUser);
 router.put('/users/:id/password', resetUserPassword);
 router.get('/users/:id/orders', getUserOrders);
 router.get('/reviews', getAllReviews);
+
+// FIX: Ensure the DELETE route is correctly mapped
+router.delete('/users/:id', deleteUser);
 
 module.exports = router;

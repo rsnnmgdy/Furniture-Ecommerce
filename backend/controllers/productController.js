@@ -34,7 +34,6 @@ exports.createProduct = asyncHandler(async (req, res) => {
   if (req.files && req.files.length > 0) {
     console.log('📸 File Details:');
     req.files.forEach((f, i) => {
-      // Diagnostic Log
       console.log(`  [${i}] ${f.originalname} - Buffer present: ${!!f.buffer} - Size: ${f.size} bytes`); 
     });
   }
@@ -77,11 +76,14 @@ exports.updateProduct = asyncHandler(async (req, res) => {
     }
   }
   
-  // Handle new images to upload
+  // Handle new images to upload (This is where the new files should be processed)
   if (req.files && req.files.length > 0) {
+    console.log(`📸 Processing ${req.files.length} new files for update...`);
     const newUploaded = await processUploadedFiles(req.files, 'furniture/products');
     const newImages = newUploaded.map(img => ({ url: img.url, publicId: img.publicId, isPrimary: false }));
     product.images.push(...newImages);
+  } else {
+      console.log('No new files received for upload on update.');
   }
   
   // FIX: Ensure there is always one primary image if the array is not empty
@@ -92,6 +94,7 @@ exports.updateProduct = asyncHandler(async (req, res) => {
   }
   
   // CRITICAL FIX: Manually mark images array as modified to ensure Mongoose saves changes
+  // This is required when working directly with sub-documents/arrays in Mongoose
   if (req.files || req.body.imagesToDelete) {
       product.markModified('images');
   }

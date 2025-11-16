@@ -35,6 +35,7 @@ import {
   CheckCircle,
   Shield,
   VpnKey,
+  Delete, // NEW
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
@@ -120,6 +121,22 @@ const Users = () => {
       toast.error('Failed to reset password');
     }
   };
+  
+  // NEW FUNCTION: Handle User Deletion
+  const handleDeleteUser = async () => {
+      if (!window.confirm(`Are you sure you want to permanently delete user ${selectedUser.username}? This action cannot be undone.`)) {
+          return;
+      }
+      try {
+          await api.delete(`/admin/users/${selectedUser._id}`);
+          toast.success('User deleted successfully');
+          handleMenuClose();
+          fetchUsers();
+      } catch (error) {
+          toast.error(error.message || 'Failed to delete user');
+      }
+  };
+
 
   if (loading) return <Loading />;
 
@@ -258,6 +275,11 @@ const Users = () => {
         </MenuItem>
         <MenuItem onClick={handleToggleBlock}>
           <Block sx={{ mr: 1, fontSize: 18 }} /> {selectedUser?.isBlocked ? 'Unblock' : 'Block'} User
+        </MenuItem>
+        <Divider />
+        {/* NEW MENU ITEM */}
+        <MenuItem onClick={handleDeleteUser} sx={{ color: 'error.main' }}>
+            <Delete sx={{ mr: 1, fontSize: 18 }} /> Delete User
         </MenuItem>
       </Menu>
 

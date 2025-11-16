@@ -39,7 +39,7 @@ import {
   Close,
 } from '@mui/icons-material';
 import { useFormik } from 'formik';
-import * as Yup from 'yup';
+import *as Yup from 'yup';
 import { toast } from 'react-toastify';
 import productService from '../../services/productService';
 import { formatCurrency } from '../../utils/helpers';
@@ -364,7 +364,7 @@ const Products = () => {
                     </TableCell>
                     <TableCell>
                       {/* DIAGNOSTIC LOG AND ROBUST IMAGE CHECK */}
-                      {console.log(`[Admin] Product "${product.name}" images:`, product.images)}
+                      {/* Ensure this displays the correct image URL (which comes from the DB) */}
                       <Box
                         component="img"
                         src={product.images && product.images.length > 0 ? product.images[0].url : '/placeholder.jpg'}
@@ -481,7 +481,7 @@ const Products = () => {
                   {existingImages.map((image) => (
                     <Grid item xs={6} sm={4} md={3} key={image._id}>
                       <Box sx={{ position: 'relative', width: '100%', paddingBottom: '100%', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px solid #E8E8E8', overflow: 'hidden' }}>
-                        <Box component="img" src={image.url} alt="product" sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        <Box component="img" src={image.url} alt="product" sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
                         <Tooltip title="Remove image">
                           <IconButton
                             size="small"

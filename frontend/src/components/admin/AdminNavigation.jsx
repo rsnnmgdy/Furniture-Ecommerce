@@ -122,18 +122,9 @@ const AdminNavigation = () => {
     );
   }
 
-  return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: '280px 1fr',
-        minHeight: '100vh',
-      }}
-    >
-      <Drawer variant="permanent" open>{DrawerContent}</Drawer>
-      <Box />
-    </Box>
-  );
+  // For desktop, just return the content. 
+  // The AdminLayout component will handle placing it in the sidebar.
+  return DrawerContent;
 };
 
 export default AdminNavigation;

@@ -7,22 +7,47 @@ const AdminLayout = ({ children }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', minHeight: '100vh' }}>
+    <Box sx={{ 
+      display: 'grid', 
+      gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', 
+      height: '100%' // Fill the parent container from App.jsx
+    }}>
+      
+      {/* Desktop Sidebar */}
       {!isMobile && (
         <Box
           sx={{
             borderRight: '1px solid #e0e0e0',
-            position: 'sticky',
-            top: 0,
-            height: 'calc(100vh - 64px)',
+            position: 'sticky', // Stick to the top
+            top: 0, 
+            // FIX: Set height to 100vh minus the 70px header
+            height: 'calc(100vh - 70px)', 
             overflowY: 'auto',
+            // FIX: Add white background to match screenshot
+            bgcolor: 'background.paper', 
           }}
         >
           <AdminNavigation />
         </Box>
       )}
-      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-        {isMobile && <AdminNavigation />}
+
+      {/* Content Area */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        
+        {/* Mobile Navigation */}
+        {isMobile && (
+          <Box sx={{ 
+            borderBottom: '1px solid #e0e0e0', 
+            bgcolor: 'background.paper',
+            display: 'flex', // Added to contain the IconButton
+            alignItems: 'center',
+            p: 1, // Added padding for mobile nav
+          }}>
+             <AdminNavigation />
+          </Box>
+        )}
+        
+        {/* Page Content (e.g., Products.jsx) */}
         {children}
       </Box>
     </Box>

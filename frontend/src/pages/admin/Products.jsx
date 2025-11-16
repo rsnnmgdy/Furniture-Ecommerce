@@ -364,7 +364,7 @@ const Products = () => {
                     </TableCell>
                     <TableCell>
                       {/* DIAGNOSTIC LOG AND ROBUST IMAGE CHECK */}
-                      {/* Ensure this displays the correct image URL (which comes from the DB) */}
+                      {console.log(`[Admin] Product "${product.name}" images:`, product.images)}
                       <Box
                         component="img"
                         src={product.images && product.images.length > 0 ? product.images[0].url : '/placeholder.jpg'}
@@ -471,7 +471,7 @@ const Products = () => {
               Product Images
             </Typography>
 
-            {/* Existing Images */}
+            {/* --- START FIX: EXISTING IMAGES PREVIEW --- */}
             {editingProduct && existingImages.length > 0 && (
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>
@@ -480,8 +480,21 @@ const Products = () => {
                 <Grid container spacing={1}>
                   {existingImages.map((image) => (
                     <Grid item xs={6} sm={4} md={3} key={image._id}>
-                      <Box sx={{ position: 'relative', width: '100%', paddingBottom: '100%', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '1px solid #E8E8E8', overflow: 'hidden' }}>
-                        <Box component="img" src={image.url} alt="product" sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+                      <Box sx={{ position: 'relative' }}>
+                        <Box
+                          component="img"
+                          src={image.url}
+                          alt="product"
+                          sx={{
+                            width: '100%',
+                            aspectRatio: '1 / 1',
+                            objectFit: 'contain',
+                            border: '1px solid #E8E8E8',
+                            borderRadius: '8px',
+                            backgroundColor: '#FAFAFA',
+                            display: 'block',
+                          }}
+                        />
                         <Tooltip title="Remove image">
                           <IconButton
                             size="small"
@@ -505,6 +518,7 @@ const Products = () => {
                 </Grid>
               </Box>
             )}
+            {/* --- END FIX --- */}
 
             {/* New Images Upload */}
             <Paper sx={{ p: 2, textAlign: 'center', border: '2px dashed #C67C4E', borderRadius: '8px', backgroundColor: '#FAFAFA', cursor: 'pointer', transition: 'all 0.3s', '&:hover': { borderColor: '#8B6F47', backgroundColor: '#F5F5F5' } }} component="label">
@@ -525,7 +539,7 @@ const Products = () => {
               </Typography>
             </Paper>
 
-            {/* New Images Preview */}
+            {/* --- START FIX: NEW IMAGES PREVIEW --- */}
             {imageFiles.length > 0 && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>
@@ -534,8 +548,21 @@ const Products = () => {
                 <Grid container spacing={1}>
                   {imageFiles.map((file, index) => (
                     <Grid item xs={6} sm={4} md={3} key={`${file.name}-${index}`}>
-                      <Box sx={{ position: 'relative', width: '100%', paddingBottom: '100%', backgroundColor: '#FAFAFA', borderRadius: '8px', border: '2px solid #C67C4E', overflow: 'hidden' }}>
-                        <Box component="img" src={URL.createObjectURL(file)} alt={file.name} sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <Box sx={{ position: 'relative' }}>
+                        <Box
+                          component="img"
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          sx={{
+                            width: '100%',
+                            aspectRatio: '1 / 1',
+                            objectFit: 'cover',
+                            border: '2px solid #C67C4E',
+                            borderRadius: '8px',
+                            backgroundColor: '#FAFAFA',
+                            display: 'block',
+                          }}
+                        />
                         <Tooltip title="Remove">
                           <IconButton
                             size="small"
@@ -559,6 +586,7 @@ const Products = () => {
                 </Grid>
               </Box>
             )}
+            {/* --- END FIX --- */}
           </DialogContent>
           <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setDialogOpen(false)}>Cancel</Button>

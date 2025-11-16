@@ -3,9 +3,11 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Review = require('../models/Review');
+const Order = require('../models/Order'); // Import Order
+const Cart = require('../models/Cart'); // Import Cart
 const connectDB = require('../config/db');
 
-// Sample furniture products - Expanded Collection
+// --- NEW ACCURATE IMAGE URLs ---
 const sampleProducts = [
   // Living Room
   {
@@ -20,9 +22,13 @@ const sampleProducts = [
     stock: 15,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800',
-        publicId: 'sample_sofa_1',
+        url: 'https://images.unsplash.com/photo-1540574163026-643ea20ade25?w=800',
+        publicId: 'sample_leather_sofa_1',
         isPrimary: true,
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1512212678077-384b65675b3d?w=800',
+        publicId: 'sample_leather_sofa_2',
       },
     ],
     tags: ['sofa', 'leather', 'modern'],
@@ -41,7 +47,7 @@ const sampleProducts = [
     stock: 10,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=800',
+        url: 'https://images.unsplash.com/photo-1616627781431-d218d6669653?w=800',
         publicId: 'sample_sectional_1',
         isPrimary: true,
       },
@@ -50,7 +56,7 @@ const sampleProducts = [
     isFeatured: true,
   },
   {
-    name: 'Coffee Table with Storage',
+    name: 'Lift-Top Coffee Table',
     description: 'Modern lift-top coffee table with hidden storage compartment. Perfect for small living spaces.',
     price: 349.99,
     category: 'Living Room',
@@ -97,7 +103,7 @@ const sampleProducts = [
     stock: 12,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=800',
+        url: 'https://images.unsplash.com/photo-1596162352222-f4136f591140?w=800',
         publicId: 'sample_armchair_1',
         isPrimary: true,
       },
@@ -115,7 +121,7 @@ const sampleProducts = [
     stock: 22,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1565636192335-14c9d9265777?w=800',
+        url: 'https://images.unsplash.com/photo-1533090481720-856c6e3c1fdc?w=800',
         publicId: 'sample_side_table_1',
         isPrimary: true,
       },
@@ -135,7 +141,7 @@ const sampleProducts = [
     stock: 8,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=800',
+        url: 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?w=800',
         publicId: 'sample_dining_1',
         isPrimary: true,
       },
@@ -154,7 +160,7 @@ const sampleProducts = [
     stock: 14,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1585518419759-63b4b73c8b62?w=800',
+        url: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=800',
         publicId: 'sample_glass_table_1',
         isPrimary: true,
       },
@@ -162,7 +168,7 @@ const sampleProducts = [
     tags: ['glass table', 'modern', 'dining'],
   },
   {
-    name: 'Dining Chair Set (4)',
+    name: 'Upholstered Dining Chairs (Set of 4)',
     description: 'Set of 4 upholstered dining chairs with ergonomic design. Available in multiple colors.',
     price: 299.99,
     category: 'Dining Room',
@@ -172,7 +178,7 @@ const sampleProducts = [
     stock: 16,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800',
+        url: 'https://images.unsplash.com/photo-1590089060011-53b7b8071811?w=800',
         publicId: 'sample_dining_chairs_1',
         isPrimary: true,
       },
@@ -180,7 +186,7 @@ const sampleProducts = [
     tags: ['dining chairs', 'upholstered', 'set'],
   },
   {
-    name: 'Buffet Cabinet Dining',
+    name: 'Dining Buffet Cabinet',
     description: 'Spacious buffet cabinet with shelving and drawers. Perfect for dining room storage.',
     price: 599.99,
     category: 'Dining Room',
@@ -190,7 +196,7 @@ const sampleProducts = [
     stock: 10,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=800',
+        url: 'https://images.unsplash.com/photo-1633513221943-4e636603417f?w=800',
         publicId: 'sample_buffet_1',
         isPrimary: true,
       },
@@ -219,7 +225,7 @@ const sampleProducts = [
     isFeatured: true,
   },
   {
-    name: 'Queen Size Storage Bed',
+    name: 'Queen Storage Bed',
     description: 'Queen size bed with built-in drawers for storage. Great space-saving solution.',
     price: 649.99,
     category: 'Bedroom',
@@ -229,7 +235,7 @@ const sampleProducts = [
     stock: 14,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1517657839318-3ac5d2e7eb1e?w=800',
+        url: 'https://images.unsplash.com/photo-1615967361877-c6b1a86b3f7f?w=800',
         publicId: 'sample_queen_bed_1',
         isPrimary: true,
       },
@@ -247,7 +253,7 @@ const sampleProducts = [
     stock: 20,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1565431656788-e088062165ea?w=800',
+        url: 'https://images.unsplash.com/photo-1594225301036-c058359400e2?w=800',
         publicId: 'sample_nightstand_1',
         isPrimary: true,
       },
@@ -255,7 +261,7 @@ const sampleProducts = [
     tags: ['nightstand', 'bedroom', 'modern'],
   },
   {
-    name: 'Bedroom Dresser Chest',
+    name: '5-Drawer Dresser Chest',
     description: 'Spacious 5-drawer dresser with ample storage. Elegant contemporary styling.',
     price: 499.99,
     salePrice: 449.99,
@@ -266,7 +272,7 @@ const sampleProducts = [
     stock: 11,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1549887534-7eb63f10a4da?w=800',
+        url: 'https://images.unsplash.com/photo-1616627685458-883a4176c134?w=800',
         publicId: 'sample_dresser_1',
         isPrimary: true,
       },
@@ -284,7 +290,7 @@ const sampleProducts = [
     stock: 6,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
+        url: 'https://images.unsplash.com/photo-1595526114032-1f09c6469c58?w=800',
         publicId: 'sample_canopy_1',
         isPrimary: true,
       },
@@ -323,7 +329,7 @@ const sampleProducts = [
     stock: 16,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1526725335684-26b375b1af28?w=800',
+        url: 'https://images.unsplash.com/photo-1580480072023-ceb0c9f16831?w=800',
         publicId: 'sample_office_chair_1',
         isPrimary: true,
       },
@@ -331,7 +337,7 @@ const sampleProducts = [
     tags: ['office chair', 'ergonomic', 'desk chair'],
   },
   {
-    name: 'Standing Desk Adjustable',
+    name: 'Adjustable Standing Desk',
     description: 'Motorized standing desk with memory presets. Switch between sitting and standing positions easily.',
     price: 799.99,
     category: 'Office',
@@ -367,7 +373,7 @@ const sampleProducts = [
     tags: ['bookcase', 'office', 'storage'],
   },
   {
-    name: 'Filing Cabinet',
+    name: '4-Drawer Filing Cabinet',
     description: '4-drawer filing cabinet with lock. Secure storage for important documents.',
     price: 299.99,
     category: 'Office',
@@ -387,7 +393,7 @@ const sampleProducts = [
 
   // Storage
   {
-    name: 'Bookshelf Storage Unit',
+    name: 'Ladder Bookshelf Unit',
     description: '5-tier open bookshelf with ladder design. Industrial style with metal frame and wooden shelves.',
     price: 299.99,
     category: 'Storage',
@@ -415,7 +421,7 @@ const sampleProducts = [
     stock: 9,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1578500494198-246f612d03b3?w=800',
+        url: 'https://images.unsplash.com/photo-1631049362529-f23a492f6d0f?w=800',
         publicId: 'sample_armoire_1',
         isPrimary: true,
       },
@@ -423,7 +429,7 @@ const sampleProducts = [
     tags: ['armoire', 'wardrobe', 'bedroom'],
   },
   {
-    name: 'Shelving Unit Industrial',
+    name: 'Industrial Shelving Unit',
     description: 'Heavy-duty industrial shelving unit with 4 shelves. Great for garage or storage room.',
     price: 199.99,
     category: 'Storage',
@@ -441,8 +447,8 @@ const sampleProducts = [
     tags: ['shelving', 'industrial', 'storage'],
   },
   {
-    name: 'Storage Ottoman',
-    description: 'Stylish ottoman with hidden storage. Perfect as footrest or extra seating.',
+    name: 'Storage Ottoman Bench',
+    description: 'Stylish ottoman bench with hidden storage. Perfect as footrest or extra seating.',
     price: 179.99,
     category: 'Storage',
     material: 'Fabric and Wood',
@@ -451,7 +457,7 @@ const sampleProducts = [
     stock: 18,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800',
+        url: 'https://images.unsplash.com/photo-1580480113221-50f09b973b06?w=800',
         publicId: 'sample_ottoman_1',
         isPrimary: true,
       },
@@ -480,7 +486,7 @@ const sampleProducts = [
     isFeatured: true,
   },
   {
-    name: 'Garden Bench Wood',
+    name: 'Wooden Garden Bench',
     description: 'Classic wooden garden bench. Durable and weather-resistant construction.',
     price: 249.99,
     category: 'Outdoor',
@@ -509,7 +515,7 @@ const sampleProducts = [
     stock: 8,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1596488335655-cc2fc3ebc9f8?w=800',
+        url: 'https://images.unsplash.com/photo-1617802362824-9b88f343c1eb?w=800',
         publicId: 'sample_outdoor_dining_1',
         isPrimary: true,
       },
@@ -517,7 +523,7 @@ const sampleProducts = [
     tags: ['outdoor dining', 'table', 'chairs'],
   },
   {
-    name: 'Lounge Chair Outdoor',
+    name: 'Outdoor Lounge Chair',
     description: 'Comfortable outdoor lounge chair with adjustable backrest. Perfect for pool or patio.',
     price: 349.99,
     category: 'Outdoor',
@@ -527,7 +533,7 @@ const sampleProducts = [
     stock: 16,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800',
+        url: 'https://images.unsplash.com/photo-1549497538-303791108f95?w=800',
         publicId: 'sample_lounge_1',
         isPrimary: true,
       },
@@ -545,7 +551,7 @@ const sampleProducts = [
     stock: 13,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800',
+        url: 'https://images.unsplash.com/photo-1587588373304-1b76404d7f57?w=800',
         publicId: 'sample_storage_box_1',
         isPrimary: true,
       },
@@ -555,7 +561,7 @@ const sampleProducts = [
 
   // Decor
   {
-    name: 'Wall Shelving Floating',
+    name: 'Floating Wall Shelves',
     description: 'Modern floating wall shelves for minimalist decor. Supports up to 25 lbs per shelf.',
     price: 89.99,
     category: 'Decor',
@@ -573,7 +579,7 @@ const sampleProducts = [
     tags: ['shelving', 'wall decor', 'floating'],
   },
   {
-    name: 'Mirror Wall Decorative',
+    name: 'Decorative Wall Mirror',
     description: 'Large decorative wall mirror with elegant frame. Adds space and light to any room.',
     price: 149.99,
     category: 'Decor',
@@ -583,7 +589,7 @@ const sampleProducts = [
     stock: 14,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1565636192335-14c9d9265777?w=800',
+        url: 'https://images.unsplash.com/photo-1503652601-557d07733ddc?w=800',
         publicId: 'sample_mirror_1',
         isPrimary: true,
       },
@@ -611,7 +617,7 @@ const sampleProducts = [
     tags: ['kitchen island', 'cart', 'storage'],
   },
   {
-    name: 'Kitchen Bar Stools',
+    name: 'Kitchen Bar Stools (Set of 2)',
     description: 'Set of 2 contemporary bar stools with adjustable height. Perfect for kitchen island.',
     price: 199.99,
     category: 'Kitchen',
@@ -621,7 +627,7 @@ const sampleProducts = [
     stock: 16,
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1533518541403-a8f7bbf0f8f5?w=800',
+        url: 'https://images.unsplash.com/photo-1503602642458-232111445657?w=800',
         publicId: 'sample_bar_stools_1',
         isPrimary: true,
       },
@@ -638,6 +644,7 @@ const sampleUsers = [
     username: 'admin',
     password: 'Admin123',
     role: 'admin',
+    isVerified: true, // Admin is pre-verified
   },
   {
     name: 'Sarah Johnson',
@@ -645,6 +652,7 @@ const sampleUsers = [
     username: 'sarah_j',
     password: 'Test123',
     role: 'user',
+    isVerified: true,
   },
   {
     name: 'Mike Chen',
@@ -652,6 +660,7 @@ const sampleUsers = [
     username: 'mike_chen',
     password: 'Test123',
     role: 'user',
+    isVerified: true,
   },
   {
     name: 'Emma Wilson',
@@ -659,6 +668,7 @@ const sampleUsers = [
     username: 'emma_w',
     password: 'Test123',
     role: 'user',
+    isVerified: true,
   },
   {
     name: 'David Martinez',
@@ -666,6 +676,7 @@ const sampleUsers = [
     username: 'david_m',
     password: 'Test123',
     role: 'user',
+    isVerified: true,
   },
   {
     name: 'Jessica Lee',
@@ -673,6 +684,7 @@ const sampleUsers = [
     username: 'jessica_l',
     password: 'Test123',
     role: 'user',
+    isVerified: true,
   },
   {
     name: 'Robert Brown',
@@ -680,6 +692,7 @@ const sampleUsers = [
     username: 'robert_b',
     password: 'Test123',
     role: 'user',
+    isVerified: true,
   },
   {
     name: 'Amanda Taylor',
@@ -687,6 +700,7 @@ const sampleUsers = [
     username: 'amanda_t',
     password: 'Test123',
     role: 'user',
+    isVerified: true,
   },
   {
     name: 'John Garcia',
@@ -694,6 +708,7 @@ const sampleUsers = [
     username: 'john_g',
     password: 'Test123',
     role: 'user',
+    isVerified: true,
   },
   {
     name: 'Test User',
@@ -701,6 +716,7 @@ const sampleUsers = [
     username: 'testuser',
     password: 'Test123',
     role: 'user',
+    isVerified: true,
   },
 ];
 
@@ -770,9 +786,11 @@ const seedDatabase = async () => {
     console.log('🗑️  Clearing existing data...');
     await Product.deleteMany({});
     await Review.deleteMany({});
+    await Order.deleteMany({}); // Clear orders
+    await Cart.deleteMany({}); // Clear carts
     // Only delete non-admin users
     await User.deleteMany({ role: { $ne: 'admin' } }); 
-    console.log('   ✅ Cleared products, reviews, and non-admin users.');
+    console.log('   ✅ Cleared products, reviews, orders, carts, and non-admin users.');
 
 
     // Create or verify users
@@ -788,6 +806,7 @@ const seedDatabase = async () => {
         username: 'admin',
         password: 'Admin123',
         role: 'admin',
+        isVerified: true,
       });
       console.log(`   ✅ Created: Admin User (admin@furniture.com)`);
     } else {

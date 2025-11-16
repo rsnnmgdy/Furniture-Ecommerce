@@ -12,7 +12,16 @@ const productService = {
     return await api.get(`/products/${id}`);
   },
 
-  // Get featured products
+  // --- NEW AESTHETIC HOMEPAGE FUNCTIONS ---
+  getTopRatedProducts: async () => {
+    return await api.get('/products/top-rated');
+  },
+  getNewArrivals: async () => {
+    return await api.get('/products/new-arrivals');
+  },
+  // --- END NEW FUNCTIONS ---
+
+  // Get featured products (Legacy, but keeping)
   getFeaturedProducts: async () => {
     return await api.get('/products/featured');
   },

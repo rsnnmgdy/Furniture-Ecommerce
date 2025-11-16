@@ -12,27 +12,40 @@ import {
   TextField,
   InputAdornment,
   Button,
-  // ToggleButtonGroup, ToggleButton, // <-- Removed
+  Card,
+  CardActionArea,
 } from '@mui/material';
 import {
   FilterList,
   ChevronLeft,
   ChevronRight,
   Search,
+  Chair,
+  KingBed,
+  TableRestaurant,
+  Deck,
+  Desk,
+  Kitchen,
 } from '@mui/icons-material';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-
-// Import services and context
-import productService from '../../services/productService'; // Make sure this path is correct
+import productService from '../../services/productService';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-
-// Import components from Home.jsx
 import Loading from '../../components/common/Loading';
 import useDebounce from '../../utils/useDebounce';
 import FilterSidebar from '../../components/user/FilterSidebar';
-import ProductGrid from '../../components/user/ProductGrid'; // The component you wanted
+import ProductGrid from '../../components/user/ProductGrid';
+
+// Category data for the icon grid
+const categoryIcons = [
+  { name: 'Living Room', icon: <Chair /> },
+  { name: 'Bedroom', icon: <KingBed /> },
+  { name: 'Dining Room', icon: <TableRestaurant /> },
+  { name: 'Office', icon: <Desk /> },
+  { name: 'Outdoor', icon: <Deck /> },
+  { name: 'Kitchen', icon: <Kitchen /> },
+];
 
 // Helper function to make the category title look nice
 const formatTitle = (title) => {
@@ -45,7 +58,7 @@ const formatTitle = (title) => {
 
 const ProductListPage = () => {
   const navigate = useNavigate();
-  const { categoryName } = useParams(); // Get category from URL
+  const { categoryName } = useParams();
   const [searchParams] = useSearchParams();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -57,9 +70,7 @@ const ProductListPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // const [scrollMode, setScrollMode] = useState('infinite'); // <-- Removed
-  // const [hasMore, setHasMore] = useState(true); // <-- Removed
-  const [wishlist, setWishlist] = useState([]); // You'll need to fetch real wishlist data
+  const [wishlist, setWishlist] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   
   const [filters, setFilters] = useState({
@@ -84,28 +95,23 @@ const ProductListPage = () => {
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  // This hook fetches products whenever filters, search, or page changes
   useEffect(() => {
-    // When filters or search change, we need to reset to page 1
-    // We can detect that change by seeing if `page` is *not* 1
     if (page !== 1) {
       setPage(1);
     } else {
-      // If page is already 1, just fetch
       fetchProducts();
     }
   }, [filters, debouncedSearchQuery]);
 
-  // This hook fetches products *only* when page changes
   useEffect(() => {
     fetchProducts();
   }, [page]);
 
   const fetchProducts = async () => {
     try {
-      setLoading(true); // Set loading true for every fetch
+      setLoading(true);
       const params = {
-        page: page, // Use the current page state
+        page: page,
         limit: 10,
         sort: filters.sort,
       };
@@ -117,8 +123,6 @@ const ProductListPage = () => {
       if (debouncedSearchQuery) params.search = debouncedSearchQuery;
 
       const response = await productService.getProducts(params); 
-
-      // Always set products (for grid/pagination mode)
       setProducts(response.products);
       setTotalPages(response.totalPages);
 
@@ -128,9 +132,6 @@ const ProductListPage = () => {
       setLoading(false);
     }
   };
-
-  // const loadMore = () => { ... }; // <-- Removed
-  // useEffect(() => { ... }, [page]); // <-- Removed
 
   const handleAddToCart = async (productId) => {
     if (!isAuthenticated()) {
@@ -156,7 +157,7 @@ const ProductListPage = () => {
 
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
-    setPage(1); // Reset page on filter change
+    setPage(1); 
     
     if (name === 'category' && value !== 'All') {
         navigate(`/categories/${value}`, { replace: true });
@@ -178,7 +179,12 @@ const ProductListPage = () => {
     navigate('/products', { replace: true });
   };
 
-  // Show loading spinner only on the *initial* load
+  // Handle category icon click
+  const handleCategoryClick = (categoryName) => {
+    // This will trigger the filter change and URL update
+    handleFilterChange('category', categoryName);
+  };
+
   if (loading && products.length === 0) return <Loading />;
 
   return (
@@ -192,6 +198,44 @@ const ProductListPage = () => {
         >
           {formatTitle(filters.category)}
         </Typography>
+
+        {/* --- NEW: CATEGORY ICON GRID --- */}
+        <Box sx={{ mb: 6 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, textAlign: 'center' }}>
+            Browse by Category
+          </Typography>
+          <Grid container spacing={2} justifyContent="center">
+            {categoryIcons.map((cat) => (
+              <Grid item xs={6} sm={4} md={2} key={cat.name}>
+                <Card 
+                  elevation={0} 
+                  sx={{ 
+                    border: '1px solid #eee',
+                    transition: 'all 0.3s ease',
+                    '&:hover': { 
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                      borderColor: 'primary.main',
+                      transform: 'translateY(-4px)',
+                    } 
+                  }}
+                >
+                  <CardActionArea
+                    onClick={() => handleCategoryClick(cat.name)}
+                    sx={{ p: 3, textAlign: 'center' }}
+                  >
+                    <Box sx={{ color: 'primary.main', mb: 1.5 }}>
+                      {React.cloneElement(cat.icon, { sx: { fontSize: 40 } })}
+                    </Box>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      {cat.name}
+                    </Typography>
+                  </CardActionArea>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+        {/* --- END: CATEGORY ICON GRID --- */}
         
         <Paper
           elevation={0}
@@ -221,7 +265,7 @@ const ProductListPage = () => {
               sx={{
                 width: { xs: '100%', md: '50%' },
                 mx: 'auto',
-                '& .MMuiOutlinedInput-root': {
+                '& .MuiOutlinedInput-root': {
                   borderRadius: '50px',
                   bgcolor: 'grey.100',
                   '&:hover': { bgcolor: 'grey.200' },
@@ -251,10 +295,6 @@ const ProductListPage = () => {
                 >
                   {isMobile ? 'Filters' : filtersOpen ? 'Hide Filters' : 'Show Filters'}
                 </Button>
-
-                {/* --- TOGGLE BUTTONS REMOVED --- */}
-                {/* <ToggleButtonGroup ... >
-                </ToggleButtonGroup> */}
               </Stack>
             </Stack>
           </Stack>
@@ -285,7 +325,7 @@ const ProductListPage = () => {
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
             sx={{
-              '& .MMuiDrawer-paper': {
+              '& .MuiDrawer-paper': {
                 width: '85%',
                 maxWidth: 320,
               },
@@ -310,10 +350,10 @@ const ProductListPage = () => {
           >
             <ProductGrid
               products={products}
-              loading={loading} // Pass loading state to show/hide spinners
-              scrollMode="grid" // Hardcode to "grid"
-              loadMore={() => {}} // Pass empty function
-              hasMore={false} // Hardcode to false
+              loading={loading}
+              scrollMode="grid" // Hardcode to "grid" for pagination
+              loadMore={() => {}}
+              hasMore={false}
               filtersOpen={filtersOpen}
               wishlist={wishlist}
               onToggleWishlist={toggleWishlist}

@@ -9,23 +9,28 @@ import {
   useTheme,
   Paper,
   Stack,
-  // TextField, InputAdornment, // <-- Removed
   Button,
   ToggleButtonGroup,
   ToggleButton,
   Fab,
   Badge,
+  Card,
+  CardActionArea,
 } from '@mui/material';
 import {
   FilterList,
   ChevronLeft,
   ChevronRight,
-  // Search, // <-- Removed
   ShoppingCart,
-  GridView as GridViewIcon, // <-- NEW ICON
-  DensityMedium as DensityMediumIcon, // <-- NEW ICON
-} from '@mui/icons-material';
-// 1. useSearchParams is now needed to read the search query
+  GridView as GridViewIcon,
+  DensityMedium as DensityMediumIcon,
+  Chair, // NEW Icon
+  KingBed, // NEW Icon
+  TableRestaurant, // NEW Icon
+  Deck, // NEW Icon
+  Desk, // NEW Icon
+  Kitchen, // NEW Icon
+} from '@mui/icons-material'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import productService from '../../services/productService';
@@ -37,9 +42,19 @@ import useDebounce from '../../utils/useDebounce';
 import FilterSidebar from '../../components/user/FilterSidebar';
 import ProductGrid from '../../components/user/ProductGrid';
 
+// NEW: Category data for the icon grid
+const categoryIcons = [
+  { name: 'Living Room', icon: <Chair /> },
+  { name: 'Bedroom', icon: <KingBed /> },
+  { name: 'Dining Room', icon: <TableRestaurant /> },
+  { name: 'Office', icon: <Desk /> },
+  { name: 'Outdoor', icon: <Deck /> },
+  { name: 'Kitchen', icon: <Kitchen /> },
+];
+
 const Home = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams(); // 2. Get searchParams
+  const [searchParams] = useSearchParams(); 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { addToCart, getCartCount } = useCart();
@@ -51,14 +66,10 @@ const Home = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   
-  // 3. --- DEFAULT TO GRID ---
-  const [scrollMode, setScrollMode] = useState('grid'); // Was 'infinite'
+  const [scrollMode, setScrollMode] = useState('grid');
   
   const [hasMore, setHasMore] = useState(true);
   const [wishlist, setWishlist] = useState([]);
-  
-  // 4. --- REMOVED LOCAL SEARCH STATE ---
-  // const [searchQuery, setSearchQuery] = useState(''); 
   
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || 'All',
@@ -73,11 +84,9 @@ const Home = () => {
     setFiltersOpen(!isMobile);
   }, [isMobile]);
 
-  // 5. Get search query from URL and debounce it
   const searchQuery = searchParams.get('search') || '';
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  // Sync category from URL (for browser back/forward)
   useEffect(() => {
     const categoryFromURL = searchParams.get('category') || 'All';
     if (categoryFromURL !== filters.category) {
@@ -85,7 +94,6 @@ const Home = () => {
     }
   }, [searchParams, filters.category]);
 
-  // This hook now depends on the debouncedSearchQuery from the URL
   useEffect(() => {
     setProducts([]);
     setPage(1);
@@ -108,7 +116,6 @@ const Home = () => {
       if (filters.maxPrice) params.maxPrice = filters.maxPrice;
       if (filters.minRating) params.minRating = filters.minRating;
       
-      // Use the debounced query from the URL
       if (debouncedSearchQuery) params.search = debouncedSearchQuery; 
 
       const response = await productService.getProducts(params);
@@ -139,15 +146,13 @@ const Home = () => {
     }
   }, [page]);
   
-  // This useEffect is new, for pagination mode ("grid")
   useEffect(() => {
     if (scrollMode === 'grid') {
       fetchProducts();
     }
-  }, [page, scrollMode]); // Re-fetch when page changes in grid mode
+  }, [page, scrollMode]); 
 
   const handleAddToCart = async (productId) => {
-    // ... (your existing code)
     if (!isAuthenticated()) {
       toast.info('Please login to add items to cart');
       navigate('/login');
@@ -162,7 +167,6 @@ const Home = () => {
   };
 
   const toggleWishlist = (productId) => {
-    // ... (your existing code)
     setWishlist((prev) =>
       prev.includes(productId)
         ? prev.filter((id) => id !== productId)
@@ -184,8 +188,12 @@ const Home = () => {
       sort: '-createdAt',
     });
     setPage(1);
-    // 6. Clear search by navigating
     navigate('/products'); 
+  };
+  
+  // NEW: Handle category icon click
+  const handleCategoryClick = (categoryName) => {
+    navigate(`/categories/${categoryName.toLowerCase().replace(' ', '-')}`);
   };
 
   if (loading && products.length === 0) return <Loading />;
@@ -193,7 +201,6 @@ const Home = () => {
   return (
     <Box>
       <Fab
-        // ... (your existing FAB code)
         color="primary"
         onClick={() => navigate('/cart')}
         aria-label="cart"
@@ -204,8 +211,45 @@ const Home = () => {
         </Badge>
       </Fab>
       
-      {/* 7. Only show Hero if no category or search is active */}
+      {/* Only show Hero if no category or search is active */}
       {!searchParams.get('category') && !searchQuery && <Hero />}
+
+      {/* --- NEW: CATEGORY ICON GRID --- */}
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, mb: 4, textAlign: 'center' }}>
+          Shop by Category
+        </Typography>
+        <Grid container spacing={2} justifyContent="center">
+          {categoryIcons.map((cat) => (
+            <Grid item xs={6} sm={4} md={2} key={cat.name}>
+              <Card 
+                elevation={0} 
+                sx={{ 
+                  border: '1px solid #eee',
+                  '&:hover': { 
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                    borderColor: 'primary.main'
+                  } 
+                }}
+              >
+                <CardActionArea
+                  onClick={() => handleCategoryClick(cat.name)}
+                  sx={{ p: 3, textAlign: 'center' }}
+                >
+                  <Box sx={{ color: 'primary.main', mb: 1 }}>
+                    {React.cloneElement(cat.icon, { sx: { fontSize: 40 } })}
+                  </Box>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    {cat.name}
+                  </Typography>
+                </CardActionArea>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+      {/* --- END: CATEGORY ICON GRID --- */}
+
 
       <Container maxWidth="xl" id="products-grid" sx={{ mb: 6 }}>
         <Paper
@@ -220,10 +264,6 @@ const Home = () => {
           }}
         >
           <Stack spacing={2}>
-          
-            {/* 8. --- SEARCH BAR REMOVED --- */}
-            {/* <TextField ... /> */}
-
             <Stack
               direction="row"
               justifyContent="space-between"
@@ -246,8 +286,7 @@ const Home = () => {
                 >
                   {isMobile ? 'Filters' : filtersOpen ? 'Hide Filters' : 'Show Filters'}
                 </Button>
-
-                {/* 9. --- TOGGLE BUTTONS UPDATED TO ICONS --- */}
+                
                 <ToggleButtonGroup
                   value={scrollMode}
                   exclusive
@@ -267,7 +306,6 @@ const Home = () => {
           </Stack>
         </Paper>
 
-        {/* ... (Rest of your Home.jsx layout: Grid, Drawer, ProductGrid) ... */}
         <Grid container spacing={4}>
           {!isMobile && filtersOpen && (
             <Grid size={{ md: 3 }}>

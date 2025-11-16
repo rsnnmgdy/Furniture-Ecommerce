@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 
 const Hero = () => {
   const navigate = useNavigate();
-  // A high-quality, aesthetic furniture image URL
+  // New Hero Image
   const heroImageUrl =
-    'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1920&q=80';
+    'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=1920&q=80';
 
   return (
     <Box
@@ -14,89 +14,85 @@ const Hero = () => {
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        height: { xs: '60vh', md: '75vh' },
-        minHeight: 400,
-        color: 'white',
-        textAlign: 'center',
+        justifyContent: 'flex-start', // Align content to the left
+        height: { xs: '70vh', md: '85vh' },
+        minHeight: 500,
+        color: 'text.primary',
+        bgcolor: '#f5f5f5', // Light beige background
         // Set the background image
         '&::before': {
           content: '""',
           position: 'absolute',
           top: 0,
-          left: 0,
+          left: '40%', // Start image from 40% of the screen
           right: 0,
           bottom: 0,
           backgroundImage: `url(${heroImageUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          zIndex: -2,
-        },
-        // Add a dark overlay for text readability
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.4)',
-          zIndex: -1,
+          zIndex: 1,
         },
       }}
     >
-      <Container maxWidth="lg">
-        <Typography
-          variant="h2"
-          component="h1"
-          sx={{
-            fontWeight: 700,
-            letterSpacing: '-0.5px',
-            mb: 3,
-            textShadow: '0 2px 6px rgba(0,0,0,0.5)',
-          }}
-        >
-          Timeless Design, Modern Comfort
-        </Typography>
-        <Typography
-          variant="h5"
-          component="p"
-          sx={{
-            maxWidth: '700px',
-            mx: 'auto',
-            mb: 4,
-            opacity: 0.95,
-            fontWeight: 300,
-            textShadow: '0 1px 4px rgba(0,0,0,0.4)',
-          }}
-        >
-          Discover exquisitely crafted furniture that transforms your living
-          spaces. Quality, style, and comfort in every design.
-        </Typography>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={() => {
-            // Smooth scroll to the products grid
-            document.getElementById('products-grid')?.scrollIntoView({ behavior: 'smooth' });
-          }}
-          sx={{
-            bgcolor: 'white',
-            color: 'primary.dark',
-            fontSize: '1rem',
-            fontWeight: 600,
-            px: 5,
-            py: 1.5,
-            '&:hover': {
-              bgcolor: 'background.paper',
-              transform: 'translateY(-2px)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-            },
-            transition: 'all 0.2s ease-in-out',
-          }}
-        >
-          Shop The Collection
-        </Button>
+      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 2, textAlign: 'left', p: 4 }}>
+        <Box sx={{ maxWidth: { xs: '100%', md: '45%' } }}>
+          <Typography
+            variant="h1"
+            component="h1"
+            sx={{
+              fontWeight: 700,
+              fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
+              lineHeight: 1.1,
+              letterSpacing: '-1.5px',
+              mb: 3,
+              color: '#1C1C1C', // Dark text
+            }}
+          >
+            Elegant Furniture
+            <br />
+            For Your Home
+          </Typography>
+          <Typography
+            variant="h6"
+            component="p"
+            sx={{
+              maxWidth: '500px',
+              mb: 4,
+              opacity: 0.8,
+              fontWeight: 300,
+              color: 'text.secondary',
+            }}
+          >
+            Discover exquisitely crafted furniture that transforms your living
+            spaces. Quality, style, and comfort in every design.
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => {
+              // Smooth scroll to the products grid
+              document.getElementById('products-grid')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: 600,
+              px: 5,
+              py: 1.5,
+              borderRadius: '50px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
+              },
+              transition: 'all 0.3s ease-in-out',
+            }}
+          >
+            Shop The Collection
+          </Button>
+        </Box>
       </Container>
     </Box>
   );
